@@ -369,53 +369,7 @@
     },
     {
       "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const urgencia = $json.urgencia || 'BAIXA';\nconst intencao = $json.intencao || 'NAO_MAPEADA';\nconst justificativa = $json.justificativa || '';\nconst sugestao = $json.sugestao_resposta || '';\nconst nome = $json.contact_name || 'Sem nome';\nconst horas = $json.horas_aguardando || '0';\nconst qtd = $json.qtd_mensagens || '0';\nconst msgs = $json.mensagens || '';\n\nconst emoji = { 'ALTA': '🔴', 'MEDIA': '🟡', 'BAIXA': '🟢' }[urgencia] || '⚪';\n\nconst blocks = [\n  {\n    type: 'header',\n    text: { type: 'plain_text', text: `${emoji} ${nome} — ${urgencia}` }\n  },\n  {\n    type: 'section',\n    fields: [\n      { type: 'mrkdwn', text: `*Situação:*\\n${intencao}` },\n      { type: 'mrkdwn', text: `*Aguardando:*\\n${horas}h (${qtd} mensagem(ns))` }\n    ]\n  },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*Por que essa urgência:*\\n${justificativa}`\n    }\n  },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*Mensagens recebidas:*\\n\\`\\`\\`${msgs.slice(0, 500)}${msgs.length > 500 ? '...' : ''}\\`\\`\\``\n    }\n  },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*Sugestão de resposta:*\\n${sugestao}`\n    }\n  },\n  { type: 'divider' }\n];\n\nreturn {\n  json: {\n    blocks: JSON.stringify(blocks),\n    text: `${emoji} ${nome}: ${urgencia}`\n  }\n};"
-      },
-      "id": "6157789a-7600-429f-9462-231d45498ad1",
-      "name": "Montar Mensagem 1 (Detalhada)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        48,
-        624
-      ]
-    },
-    {
-      "parameters": {
-        "select": "channel",
-        "channelId": {
-          "__rl": true,
-          "value": "C0B0GC48EV8",
-          "mode": "id"
-        },
-        "messageType": "block",
-        "blocksUi": "={{ $json.blocks }}",
-        "text": "={{ $json.text }}",
-        "otherOptions": {}
-      },
-      "id": "26cfb4b0-73ed-4965-8a68-961963cb0798",
-      "name": "Slack: Enviar Mensagem 1",
-      "type": "n8n-nodes-base.slack",
-      "typeVersion": 2.2,
-      "position": [
-        256,
-        624
-      ],
-      "webhookId": "13ce9eb7-00ce-4fed-b37f-9b70251b47ad",
-      "credentials": {
-        "slackApi": {
-          "id": "dBI2K3V3j9FYHqyb",
-          "name": "Slack account"
-        }
-      },
-      "retryOnFail": true,
-      "maxTries": 5,
-      "waitBetweenTries": 10000
-    },
-    {
-      "parameters": {
-        "jsCode": "const items = $('Parse + Merge').all();\nconst results = [];\n\nfor (const item of items) {\n  const urgencia = item.json.urgencia || 'BAIXA';\n  const intencao = item.json.intencao || 'NAO_MAPEADA';\n  const nome = item.json.contact_name || 'Sem nome';\n  const horas = item.json.horas_aguardando || '0';\n  const qtd = item.json.qtd_mensagens || '0';\n  const msgs = item.json.mensagens || '';\n  const sugestao = item.json.sugestao_resposta || '';\n  const justificativa = item.json.justificativa || '';\n\n  const emoji = { 'ALTA': '🔴', 'MEDIA': '🟡', 'BAIXA': '🟢' }[urgencia] || '⚪';\n\n  let texto = `${emoji} *${nome}* — ${urgencia}\\n\\n`;\n  texto += `*Situação identificada:* ${intencao}\\n`;\n  texto += `*Aguardando:* ${horas}h (${qtd} mensagem(ns))\\n`;\n  texto += `*Por que essa urgência:* ${justificativa}\\n\\n`;\n  texto += `*Mensagens recebidas:*\\n\\`\\`\\`${msgs.slice(0, 500)}${msgs.length > 500 ? '...' : ''}\\`\\`\\`\\n\\n`;\n  texto += `*Sugestão de resposta:*\\n${sugestao}`;\n\n  results.push({ json: { text: texto } });\n}\n\nreturn results;"
+        "jsCode": "// Agrega todas as conversas e monta UMA mensagem consolidada para o Slack\n// Ordenada por urgência: ALTA → MEDIA → BAIXA\n\nconst urgenciaOrdem = { 'ALTA': 0, 'MEDIA': 1, 'BAIXA': 2 };\n\nconst todos = $('Parse + Merge').all().sort((a, b) => {\n  const ua = urgenciaOrdem[a.json.urgencia] ?? 1;\n  const ub = urgenciaOrdem[b.json.urgencia] ?? 1;\n  if (ua !== ub) return ua - ub;\n  return Number(b.json.horas_aguardando) - Number(a.json.horas_aguardando);\n});\n\nconst emoji = { 'ALTA': '🔴', 'MEDIA': '🟡', 'BAIXA': '🟢' };\n\nlet linhas = [];\n\nfor (const item of todos) {\n  const d = item.json;\n  const urg = (d.urgencia || 'BAIXA').toUpperCase();\n  const em  = emoji[urg] || '⚪';\n  const nome = d.contact_name || 'Sem nome';\n  const horas = d.horas_aguardando || '0';\n  const qtd   = d.qtd_mensagens || 0;\n  const intencao = d.intencao || '';\n  const justificativa = d.justificativa || '';\n  const msgs = (d.mensagens || '').slice(0, 400) + ((d.mensagens || '').length > 400 ? '...' : '');\n  const sugestao = d.sugestao_resposta || '';\n  const lembrete = d.lembrete || '';\n\n  linhas.push(`${em} *${nome}* — ${urg}`);\n  linhas.push(`*Situação:* ${intencao}  |  *Aguardando:* ${horas}h (${qtd} msg)`);\n  if (justificativa) linhas.push(`*Por quê:* ${justificativa}`);\n  linhas.push(`*Mensagem recebida:*\\n\\`\\`\\`${msgs}\\`\\`\\``);\n  linhas.push(`*Sugestão de resposta:*\\n${sugestao}`);\n  if (lembrete) linhas.push(`⚠️ *Lembrete:* ${lembrete}`);\n  linhas.push('──────────────────────────');\n}\n\nlet texto = linhas.join('\\n');\n\n// Slack tem limite de 40.000 chars por mensagem\nif (texto.length > 39000) {\n  texto = texto.slice(0, 39000) + '\\n\\n... *(mensagem truncada — muitas conversas)*';\n}\n\nreturn [{ json: { text: texto } }];\n"
       },
       "id": "c6aabf3e-6240-4a3a-943b-32dcff7ce634",
       "name": "Montar Mensagem 2 (Resumo)",
@@ -946,28 +900,6 @@
       ]
     },
     "Parse + Merge": {
-      "main": [
-        [
-          {
-            "node": "Montar Mensagem 1 (Detalhada)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Montar Mensagem 1 (Detalhada)": {
-      "main": [
-        [
-          {
-            "node": "Slack: Enviar Mensagem 1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Slack: Enviar Mensagem 1": {
       "main": [
         [
           {
