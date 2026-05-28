@@ -408,7 +408,10 @@
           "id": "dBI2K3V3j9FYHqyb",
           "name": "Slack account"
         }
-      }
+      },
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 10000
     },
     {
       "parameters": {
@@ -448,7 +451,10 @@
           "id": "dBI2K3V3j9FYHqyb",
           "name": "Slack account"
         }
-      }
+      },
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 10000
     },
     {
       "parameters": {
