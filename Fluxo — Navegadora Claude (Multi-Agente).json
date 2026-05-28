@@ -562,8 +562,8 @@
       "waitBetweenTries": 5000,
       "credentials": {
         "httpHeaderAuth": {
-          "id": "anthropic_header_auth",
-          "name": "Anthropic API Key (x-api-key)"
+          "id": "pCwDei6MlUxWtD96",
+          "name": "Header Auth account"
         }
       },
       "onError": "continueRegularOutput"
@@ -636,8 +636,8 @@
       "waitBetweenTries": 5000,
       "credentials": {
         "httpHeaderAuth": {
-          "id": "anthropic_header_auth",
-          "name": "Anthropic API Key (x-api-key)"
+          "id": "pCwDei6MlUxWtD96",
+          "name": "Header Auth account"
         }
       },
       "onError": "continueRegularOutput"
@@ -710,8 +710,8 @@
       "waitBetweenTries": 5000,
       "credentials": {
         "httpHeaderAuth": {
-          "id": "anthropic_header_auth",
-          "name": "Anthropic API Key (x-api-key)"
+          "id": "pCwDei6MlUxWtD96",
+          "name": "Header Auth account"
         }
       },
       "onError": "continueRegularOutput"
@@ -784,8 +784,8 @@
       "waitBetweenTries": 5000,
       "credentials": {
         "httpHeaderAuth": {
-          "id": "anthropic_header_auth",
-          "name": "Anthropic API Key (x-api-key)"
+          "id": "pCwDei6MlUxWtD96",
+          "name": "Header Auth account"
         }
       },
       "onError": "continueRegularOutput"
