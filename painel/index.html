@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel da Navegadora · Mentoria Fluxo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --background: 48 14% 96%; --foreground: 221 39% 11%; --card: 0 0% 100%;
+    --primary: 84 78% 55%; --primary-hover: 84 72% 48%; --primary-foreground: 158 32% 11%;
+    --muted: 48 12% 93%; --muted-foreground: 220 9% 42%;
+    --palette-border: 48 10% 86%; --palette-input: 48 10% 84%;
+    --radius: 0.75rem; --radius-sm: 8px; --radius-xs: 6px;
+    --shadow: 0 1px 2px hsl(221 39% 11% / 0.04); --shadow-md: 0 4px 20px hsl(221 39% 11% / 0.06);
+    --accent-dark: #65a30d;
+    --green: #16a34a;  --green-bg: #dcfce7;  --green-bd: #86efac;
+    --yellow: #a16207; --yellow-bg: #fef9c3; --yellow-bd: #fde047;
+    --red: #b91c1c;    --red-bg: #fee2e2;    --red-bd: #fca5a5;
+    --blue: #2563eb;   --blue-bg: #dbeafe;
+    --text-primary: hsl(var(--foreground)); --text-secondary: hsl(var(--muted-foreground)); --text-muted: hsl(220 9% 55%);
+    --bg-sidebar: hsl(160 18% 7%);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--text-primary); line-height: 1.5; font-size: 14px; min-height: 100vh; padding-bottom: 60px;
+    background:
+      radial-gradient(circle at 0% 0%, hsl(48 22% 98%) 0%, transparent 55%),
+      radial-gradient(circle at 100% 100%, hsl(84 35% 92% / 0.45) 0%, transparent 42%),
+      hsl(var(--background));
+  }
+  .material-symbols-rounded { font-family: 'Material Symbols Rounded'; font-weight: 400; line-height: 1; font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align: middle; }
+  a { text-decoration: none; color: inherit; }
+
+  header { position: sticky; top: 0; z-index: 10; background: hsl(var(--card) / 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid hsl(var(--palette-border)); padding: 18px 32px; }
+  .header-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .brand-dot { width: 28px; height: 28px; border-radius: 9px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .brand-dot .material-symbols-rounded { font-size: 18px; }
+  h1 { font-family: 'Public Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: #0f172a; }
+  .sub { color: var(--text-secondary); font-size: 13px; }
+  .link-aprendizado { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--blue); background: var(--blue-bg); border: 1px solid hsl(217 91% 60% / 0.3); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-family: inherit; }
+  .link-aprendizado:hover { filter: brightness(0.97); }
+  .link-aprendizado .material-symbols-rounded { font-size: 16px; }
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+  .stat { background: hsl(var(--muted)); border: 1px solid hsl(var(--palette-border) / 0.6); border-radius: 999px; padding: 6px 14px; font-size: 12px; color: var(--text-secondary); }
+  .stat b { font-size: 14px; color: var(--text-primary); margin-left: 2px; }
+  .stat.alta b { color: var(--red); } .stat.media b { color: var(--yellow); } .stat.baixa b { color: var(--green); }
+  .pend-wrap { position: relative; }
+  .stat.clicavel { cursor: pointer; user-select: none; transition: border-color .15s, background .15s; }
+  .stat.clicavel:hover { border-color: hsl(var(--primary) / 0.6); background: hsl(84 60% 92% / 0.5); }
+  .stat.clicavel .material-symbols-rounded { font-size: 15px; vertical-align: -3px; margin-left: 1px; color: var(--text-muted); }
+  .pend-pop { position: absolute; top: calc(100% + 8px); left: 0; z-index: 30; min-width: 240px; max-height: 320px; overflow-y: auto; background: hsl(var(--card)); border: 1px solid hsl(var(--palette-border)); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); padding: 6px; display: none; }
+  .pend-pop.show { display: block; }
+  .pend-pop .pp-titulo { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); font-weight: 600; padding: 6px 8px 4px; }
+  .pend-pop .pp-item { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: var(--radius-xs); cursor: pointer; font-size: 13px; color: var(--text-primary); }
+  .pend-pop .pp-item:hover { background: hsl(var(--muted)); }
+  .pend-pop .pp-dot { width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; }
+  .pend-pop .pp-dot.alta { background: var(--red); } .pend-pop .pp-dot.media { background: var(--yellow); } .pend-pop .pp-dot.baixa { background: var(--green); }
+  .pend-pop .pp-vazio { padding: 10px 8px; color: var(--text-muted); font-size: 13px; }
+  .filtros { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .chip { background: hsl(var(--card)); border: 1px solid hsl(var(--palette-border)); color: var(--text-secondary); border-radius: 999px; padding: 7px 16px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; }
+  .chip:hover { border-color: hsl(var(--primary) / 0.5); color: var(--text-primary); }
+  .chip.ativo { background: hsl(var(--primary)); border-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-weight: 600; }
+  input.busca { background: hsl(var(--card)); border: 1px solid hsl(var(--palette-input)); color: var(--text-primary); border-radius: var(--radius-xs); padding: 8px 14px; font-size: 13px; min-width: 200px; outline: none; transition: border-color .2s, box-shadow .2s; font-family: inherit; }
+  input.busca:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 3px hsl(84 78% 55% / 0.18); }
+  input.busca::placeholder { color: hsl(var(--muted-foreground)); }
+  .mock-aviso { display: flex; align-items: center; gap: 8px; background: hsl(84 60% 92% / 0.6); border: 1px solid hsl(var(--primary) / 0.35); color: var(--accent-dark); font-size: 12px; border-radius: var(--radius-xs); padding: 8px 14px; margin-top: 16px; }
+  .mock-aviso .material-symbols-rounded { font-size: 16px; }
+
+  main { max-width: 860px; margin: 0 auto; padding: 28px 32px; display: grid; gap: 16px; }
+  .card { background: hsl(var(--card)); border: 1px solid hsl(var(--palette-border)); border-left: 4px solid hsl(var(--palette-border)); border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow); transition: opacity .2s, box-shadow .2s; }
+  .card:hover { box-shadow: var(--shadow-md); }
+  .card.alta { border-left-color: var(--red); } .card.media { border-left-color: var(--yellow); } .card.baixa { border-left-color: var(--green); }
+  .card.enviada { opacity: .55; }
+  .card-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .nome { font-weight: 700; font-size: 16px; color: var(--text-primary); }
+  .numero { color: var(--text-muted); font-size: 13px; }
+  .badge { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; padding: 3px 10px; border-radius: 999px; border: 1px solid transparent; }
+  .badge.alta { background: var(--red-bg); color: var(--red); border-color: var(--red-bd); }
+  .badge.media { background: var(--yellow-bg); color: var(--yellow); border-color: var(--yellow-bd); }
+  .badge.baixa { background: var(--green-bg); color: var(--green); border-color: var(--green-bd); }
+  .meta { margin-left: auto; color: var(--text-muted); font-size: 12px; text-align: right; line-height: 1.4; }
+  .intencao { display: inline-block; margin-top: 12px; background: hsl(var(--muted)); border: 1px solid hsl(var(--palette-border) / 0.6); color: var(--text-secondary); font-size: 11px; font-weight: 600; letter-spacing: .02em; border-radius: 999px; padding: 3px 10px; }
+  .bloco { margin-top: 14px; }
+  .rotulo { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .tag-editada { background: var(--blue-bg); color: var(--blue); border-radius: 999px; padding: 1px 8px; font-size: 10px; font-weight: 700; letter-spacing: .02em; text-transform: none; }
+  .msg-mentorado { background: hsl(var(--muted)); border-radius: var(--radius-sm); padding: 11px 14px; font-size: 14px; white-space: pre-wrap; color: var(--text-primary); }
+  .sugestao { background: hsl(84 60% 92% / 0.5); border: 1px solid hsl(var(--primary) / 0.4); border-radius: var(--radius-sm); padding: 13px 15px; font-size: 14px; white-space: pre-wrap; color: var(--text-primary); }
+  textarea.sug-edit { width: 100%; min-height: 120px; resize: vertical; background: hsl(var(--card)); border: 1px solid hsl(var(--primary)); border-radius: var(--radius-sm); padding: 13px 15px; font-size: 14px; font-family: inherit; line-height: 1.5; color: var(--text-primary); outline: none; box-shadow: 0 0 0 3px hsl(84 78% 55% / 0.18); }
+  .justificativa { font-size: 13px; color: var(--text-secondary); font-style: italic; }
+  .lembrete { display: flex; align-items: flex-start; gap: 8px; background: var(--yellow-bg); border: 1px solid var(--yellow-bd); border-radius: var(--radius-sm); padding: 10px 13px; font-size: 13px; color: #854d0e; }
+  .lembrete .material-symbols-rounded { font-size: 17px; flex-shrink: 0; }
+  .acoes { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
+  button.btn { display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: var(--radius-xs); padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; font-family: inherit; }
+  button.btn .material-symbols-rounded { font-size: 17px; }
+  .btn-copiar { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+  .btn-copiar:hover { background: hsl(var(--primary-hover)); }
+  .btn-editar { background: hsl(var(--card)); color: var(--text-secondary); border: 1px solid hsl(var(--palette-border)); }
+  .btn-editar:hover { background: hsl(var(--muted)); color: var(--text-primary); border-color: hsl(var(--primary) / 0.5); }
+  .btn-enviada { background: hsl(var(--card)); color: var(--text-secondary); border: 1px solid hsl(var(--palette-border)); }
+  .btn-enviada:hover { background: hsl(var(--muted)); color: var(--text-primary); border-color: hsl(var(--primary) / 0.5); }
+  .vazio { text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 13px; }
+  .divisor { display: flex; align-items: center; gap: 12px; margin: 18px 2px 0; }
+  .divisor .rot { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px; }
+  .divisor .rot .material-symbols-rounded { font-size: 16px; }
+  .divisor .nota { font-size: 11px; color: var(--text-muted); }
+  .divisor .linha { flex: 1; height: 1px; background: hsl(var(--palette-border)); }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--bg-sidebar); color: #fff; font-weight: 600; font-size: 14px; padding: 11px 22px; border-radius: 999px; opacity: 0; pointer-events: none; transition: all .25s; box-shadow: var(--shadow-md); display: inline-flex; align-items: center; gap: 8px; }
+  .toast .material-symbols-rounded { font-size: 18px; color: hsl(var(--primary)); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-top">
+    <span class="brand-dot"><span class="material-symbols-rounded">forum</span></span>
+    <h1>Painel da Navegadora</h1>
+    <span class="sub">Mentoria Fluxo · sugestões de resposta para o WhatsApp</span>
+    <button class="link-aprendizado" id="btn-aprendizado" onclick="exportarAprendizado()" title="Baixar as edições aprendidas em JSON">
+      <span class="material-symbols-rounded">school</span><span id="aprendizado-count">0</span> aprendizados
+    </button>
+  </div>
+  <div class="toolbar">
+    <div class="pend-wrap">
+      <div class="stat clicavel" id="stat-pend" onclick="togglePendentes(event)" title="Ver quem está pendente">Pendentes <b id="st-pend">0</b><span class="material-symbols-rounded">expand_more</span></div>
+      <div class="pend-pop" id="pend-pop"></div>
+    </div>
+    <div class="stat alta">Alta <b id="st-alta">0</b></div>
+    <div class="stat media">Média <b id="st-media">0</b></div>
+    <div class="stat baixa">Baixa <b id="st-baixa">0</b></div>
+    <div class="filtros">
+      <input class="busca" id="busca" placeholder="Buscar por nome...">
+      <span class="chip ativo" data-f="todas">Todas</span>
+      <span class="chip" data-f="ALTA">Alta</span>
+      <span class="chip" data-f="MEDIA">Média</span>
+      <span class="chip" data-f="BAIXA">Baixa</span>
+      <span class="chip" data-f="RESPONDIDAS">Respondidas</span>
+    </div>
+  </div>
+  <div class="mock-aviso">
+    <span class="material-symbols-rounded">info</span>
+    Modo demonstração: dados de exemplo. As edições e os aprendizados ficam salvos no seu navegador. Depois, basta apontar para o Supabase.
+  </div>
+</header>
+
+<main id="lista"></main>
+<div class="toast" id="toast"><span class="material-symbols-rounded">check_circle</span><span id="toast-txt">Copiado</span></div>
+
+<script>
+// ============================================================
+//  FONTE DE DADOS (hoje mock; depois trocar por fetch no Supabase)
+// ============================================================
+async function carregarSugestoes() {
+  // const r = await fetch(`${SUPABASE_URL}/rest/v1/sugestoes?order=criada_em.asc`, {
+  //   headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
+  // return await r.json();
+  return MOCK;
+}
+
+function diasAtras(n, h = 10, m = 0) { const d = new Date(); d.setDate(d.getDate() - n); d.setHours(h, m, 0, 0); return d.toISOString(); }
+
+const MOCK = [
+  { id: "1", contact_name: "Tatiana Pires", whatsapp_number: "55 11 9XXXX-1234", horas_aguardando: 0.3, qtd_mensagens: 1, urgencia: "MEDIA", intencao: "ANALISE_PLANO_ACAO",
+    mensagens: "Oi Amanda! Os vídeos eu tenho. A proposta do produto principal está pronta, mas não está formatada como o Rafa pediu. A masterclass bônus ainda não consegui gravar e estou priorizando ela. Podemos seguir com a próxima análise?",
+    justificativa: "Responde à pergunta sobre o que falta para fechar o plano. Plano com 4 dias de atraso, objetivo é destravar.",
+    sugestao_resposta: "Tatiana, vídeos e proposta prontos já bastam para a análise. A gente dispensa a formatação e a masterclass bônus por agora, não vale segurar mais 4 dias por isso.\n\nEntra no Fluxer e escolhe a data que funciona pra você.",
+    lembrete: "", criada_em: diasAtras(0, 13, 30), enviada_em: null, status: "pendente" },
+
+  { id: "2", contact_name: "Erika Montalvao", whatsapp_number: "55 21 9XXXX-5678", horas_aguardando: 0.1, qtd_mensagens: 4, urgencia: "BAIXA", intencao: "RESOLVIDO_PELO_MENTORADO",
+    mensagens: "boa tarde\nnao achei o criativo fofinho, vc sabe como atualizo para ele aparecer?\nja consegui\nbjos",
+    justificativa: "A mentorada resolveu sozinha antes da resposta. Não dar passo a passo, só comemorar.",
+    sugestao_resposta: "Erika, arrasou. Se pintar mais alguma coisa, é só falar.",
+    lembrete: "", criada_em: diasAtras(0, 15, 48), enviada_em: null, status: "pendente" },
+
+  { id: "3", contact_name: "Carla Nunes", whatsapp_number: "55 31 9XXXX-4321", horas_aguardando: 3.5, qtd_mensagens: 2, urgencia: "ALTA", intencao: "RECLAMACAO",
+    mensagens: "Já é a segunda vez que mando mensagem e ninguém me responde. Paguei caro nessa mentoria e estou me sentindo abandonada.",
+    justificativa: "Insatisfação clara e segundo contato sem resposta. Urgência alta, abrir reconhecendo o incômodo.",
+    sugestao_resposta: "Carla, eu te entendo e já estou aqui com você. Me conta o que você precisa resolver agora que eu cuido disso pessoalmente e te dou um retorno ainda hoje.",
+    lembrete: "Verificar no sistema o histórico de mensagens da Carla antes de responder.",
+    criada_em: diasAtras(0, 11, 0), enviada_em: null, status: "pendente" },
+
+  { id: "4", contact_name: "João Bismarck", whatsapp_number: "55 47 9XXXX-9090", horas_aguardando: 1.2, qtd_mensagens: 1, urgencia: "BAIXA", intencao: "BOAS_VINDAS",
+    mensagens: "Oii, acabei de entrar na mentoria, me passaram seu número. Tô animado pra começar!",
+    justificativa: "Primeiro contato de quem está chegando. Acolher e pedir para contar sobre o projeto.",
+    sugestao_resposta: "Seja muito bem-vindo à Mentoria Fluxo, João. Vamos seguir juntos nessa jornada e pode contar comigo pra tirar dúvidas e dar feedbacks. Me conta um pouco sobre o seu projeto, pode ser áudio ou texto, como preferir.",
+    lembrete: "Enviar o card padrão de boas-vindas junto com a mensagem.",
+    criada_em: diasAtras(0, 9, 15), enviada_em: null, status: "pendente" },
+
+  { id: "5", contact_name: "Rafael Lemos", whatsapp_number: "55 51 9XXXX-2020", horas_aguardando: 0.8, qtd_mensagens: 1, urgencia: "BAIXA", intencao: "GRAVACAO_ANALISE",
+    mensagens: "Oi! Quando fica disponível a gravação da minha última análise?",
+    justificativa: "Dúvida operacional simples sobre prazo da gravação.",
+    sugestao_resposta: "Rafael, a gravação fica disponível em até 7 dias úteis depois da sessão, direto no Fluxer.",
+    lembrete: "", criada_em: diasAtras(1, 10, 0), enviada_em: diasAtras(1, 10, 12), status: "enviada" },
+
+  { id: "6", contact_name: "Sofia Brandão", whatsapp_number: "55 85 9XXXX-3131", horas_aguardando: 0.5, qtd_mensagens: 1, urgencia: "MEDIA", intencao: "AGENDAR_ANALISE",
+    mensagens: "Como faço pra agendar minha próxima análise? Não achei onde marca.",
+    justificativa: "Dúvida operacional de agendamento.",
+    sugestao_resposta: "Sofia, o agendamento é pelo Fluxer, em flx.vendatodosantodia.com.br/academy. Qualquer coisa me chama que eu te ajudo a localizar.",
+    lembrete: "", criada_em: diasAtras(3, 14, 0), enviada_em: diasAtras(3, 14, 20), status: "enviada" }
+];
+
+// ============================================================
+//  PERSISTENCIA (edições) + APRENDIZADO (correções)
+//  Hoje em localStorage. Em produção, vão para o Supabase:
+//   - edições -> tabela sugestoes (campo texto_editado)
+//   - correções -> tabela correcoes (original vs editado), que alimenta
+//     a melhora dos agentes (exemplos, calibragem de prompt, fine-tuning)
+// ============================================================
+const KEY_EDICOES = "fluxo_edicoes";
+const KEY_CORRECOES = "fluxo_correcoes";
+
+function lerEdicoes() { try { return JSON.parse(localStorage.getItem(KEY_EDICOES) || "{}"); } catch (e) { return {}; } }
+function salvarEdicoes(obj) { localStorage.setItem(KEY_EDICOES, JSON.stringify(obj)); }
+function lerCorrecoes() { try { return JSON.parse(localStorage.getItem(KEY_CORRECOES) || "[]"); } catch (e) { return []; } }
+function salvarCorrecoes(arr) { localStorage.setItem(KEY_CORRECOES, JSON.stringify(arr)); }
+
+// ============================================================
+//  ESTADO + RENDER
+// ============================================================
+let SUGESTOES = [];
+let filtroAtual = "todas";
+let buscaAtual = "";
+let editandoId = null;
+
+function fmtTempo(h) { const horas = Number(h) || 0; if (horas < 1) return Math.round(horas * 60) + " min aguardando"; return horas.toFixed(1) + "h aguardando"; }
+function classeUrg(u) { return (u || "").toLowerCase(); }
+function dentroDe7Dias(iso) { if (!iso) return false; const limite = new Date(); limite.setDate(limite.getDate() - 7); limite.setHours(0,0,0,0); return new Date(iso) >= limite; }
+function fmtDataHora(iso) { if (!iso) return ""; return new Date(iso).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }); }
+function escapar(str) { return String(str == null ? "" : str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+function montarCard(s) {
+  const u = classeUrg(s.urgencia);
+  const editando = editandoId === s.id;
+  const lembreteHtml = s.lembrete && s.lembrete.trim()
+    ? `<div class="bloco"><div class="rotulo">Lembrete pro CS</div><div class="lembrete"><span class="material-symbols-rounded">push_pin</span><span>${escapar(s.lembrete)}</span></div></div>`
+    : "";
+  const carimbo = s.status === "enviada" && s.enviada_em
+    ? `<span class="meta">Enviada ${fmtDataHora(s.enviada_em)}</span>`
+    : `<span class="meta">${fmtTempo(s.horas_aguardando)}<br>${s.qtd_mensagens} msg</span>`;
+
+  const tagEditada = s.editada ? `<span class="tag-editada">editada</span>` : "";
+
+  const blocoSugestao = editando
+    ? `<div class="bloco">
+         <div class="rotulo">Editando a resposta</div>
+         <textarea class="sug-edit" id="edit-${s.id}">${escapar(s.sugestao_resposta)}</textarea>
+       </div>`
+    : `<div class="bloco">
+         <div class="rotulo">Sugestão de resposta ${tagEditada}</div>
+         <div class="sugestao">${escapar(s.sugestao_resposta)}</div>
+       </div>`;
+
+  const blocoAcoes = editando
+    ? `<div class="acoes">
+         <button class="btn btn-copiar" onclick="salvarEdicao('${s.id}')"><span class="material-symbols-rounded">save</span>Salvar edição</button>
+         <button class="btn btn-editar" onclick="cancelarEdicao()"><span class="material-symbols-rounded">close</span>Cancelar</button>
+       </div>`
+    : `<div class="acoes">
+         <button class="btn btn-copiar" onclick="copiar('${s.id}')"><span class="material-symbols-rounded">content_copy</span>Copiar resposta</button>
+         <button class="btn btn-editar" onclick="editar('${s.id}')"><span class="material-symbols-rounded">edit</span>Editar</button>
+         <button class="btn btn-enviada" onclick="alternarEnviada('${s.id}')"><span class="material-symbols-rounded">${s.status === 'enviada' ? 'undo' : 'check'}</span>${s.status === 'enviada' ? 'Reabrir' : 'Marcar como enviada'}</button>
+       </div>`;
+
+  return `
+    <div class="card ${u} ${s.status === 'enviada' ? 'enviada' : ''}" data-id="${s.id}">
+      <div class="card-top">
+        <span class="nome">${escapar(s.contact_name)}</span>
+        <span class="numero">${escapar(s.whatsapp_number)}</span>
+        <span class="badge ${u}">${escapar(s.urgencia)}</span>
+        ${carimbo}
+      </div>
+      <span class="intencao">${escapar(s.intencao)}</span>
+      <div class="bloco"><div class="rotulo">Mensagem do mentorado</div><div class="msg-mentorado">${escapar(s.mensagens)}</div></div>
+      ${blocoSugestao}
+      ${lembreteHtml}
+      ${blocoAcoes}
+    </div>`;
+}
+
+function passaFiltros(s) {
+  const passaBusca = !buscaAtual || (s.contact_name || "").toLowerCase().includes(buscaAtual);
+  if (!passaBusca) return false;
+  // Aba "Respondidas": só mostra o que já foi enviado
+  if (filtroAtual === "RESPONDIDAS") return s.status === "enviada";
+  // Demais abas (Todas / Alta / Média / Baixa): só pendentes
+  if (s.status === "enviada") return false;
+  return filtroAtual === "todas" || s.urgencia === filtroAtual;
+}
+
+function render() {
+  const lista = document.getElementById("lista");
+  const visiveis = SUGESTOES.filter(passaFiltros);
+  const ordemUrg = { ALTA: 0, MEDIA: 1, BAIXA: 2 };
+
+  let html;
+  if (filtroAtual === "RESPONDIDAS") {
+    const respondidas = visiveis.sort((a, b) => new Date(b.enviada_em) - new Date(a.enviada_em));
+    html = respondidas.length
+      ? respondidas.map(montarCard).join("")
+      : `<div class="vazio">Nenhuma mensagem respondida ainda.</div>`;
+  } else {
+    const pendentes = visiveis.sort((a, b) => (ordemUrg[a.urgencia] ?? 3) - (ordemUrg[b.urgencia] ?? 3));
+    html = pendentes.length
+      ? pendentes.map(montarCard).join("")
+      : `<div class="vazio">Nenhuma sugestão pendente.</div>`;
+  }
+
+  lista.innerHTML = html;
+  if (editandoId) { const t = document.getElementById("edit-" + editandoId); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } }
+  atualizarStats();
+}
+
+function atualizarStats() {
+  const pend = SUGESTOES.filter(s => s.status !== "enviada");
+  document.getElementById("st-pend").textContent = pend.length;
+  document.getElementById("st-alta").textContent = pend.filter(s => s.urgencia === "ALTA").length;
+  document.getElementById("st-media").textContent = pend.filter(s => s.urgencia === "MEDIA").length;
+  document.getElementById("st-baixa").textContent = pend.filter(s => s.urgencia === "BAIXA").length;
+  document.getElementById("aprendizado-count").textContent = lerCorrecoes().length;
+}
+
+// ============================================================
+//  AÇÕES
+// ============================================================
+function copiar(id) {
+  const s = SUGESTOES.find(x => x.id === id); if (!s) return;
+  navigator.clipboard.writeText(s.sugestao_resposta).then(() => mostrarToast("Copiado"));
+}
+
+function editar(id) { editandoId = id; render(); }
+function cancelarEdicao() { editandoId = null; render(); }
+
+function salvarEdicao(id) {
+  const s = SUGESTOES.find(x => x.id === id); if (!s) return;
+  const t = document.getElementById("edit-" + id); if (!t) return;
+  const novoTexto = t.value.trim();
+  if (!novoTexto) { mostrarToast("Resposta vazia"); return; }
+
+  const mudou = novoTexto !== s.sugestao_resposta;
+  if (mudou) {
+    // 1) guarda a edição (persistência)
+    const edicoes = lerEdicoes();
+    edicoes[id] = { texto: novoTexto, em: new Date().toISOString() };
+    salvarEdicoes(edicoes);
+
+    // 2) APRENDIZADO: registra a correção (original do agente vs final humano)
+    const correcoes = lerCorrecoes();
+    correcoes.push({
+      id, mentorado: s.contact_name, intencao: s.intencao,
+      mensagem: s.mensagens, original: s.sugestao_original, editado: novoTexto,
+      em: new Date().toISOString()
+    });
+    salvarCorrecoes(correcoes);
+
+    s.sugestao_resposta = novoTexto;
+    s.editada = true;
+    mostrarToast("Edição salva e aprendida");
+  }
+  editandoId = null;
+  render();
+}
+
+function alternarEnviada(id) {
+  const s = SUGESTOES.find(x => x.id === id); if (!s) return;
+  if (s.status === "enviada") { s.status = "pendente"; s.enviada_em = null; }
+  else { s.status = "enviada"; s.enviada_em = new Date().toISOString(); }
+  render();
+}
+
+// Lista de mentorados pendentes (contador "Pendentes" clicável)
+function togglePendentes(e) {
+  if (e) e.stopPropagation();
+  const pop = document.getElementById("pend-pop");
+  if (pop.classList.contains("show")) { pop.classList.remove("show"); return; }
+  const ordemUrg = { ALTA: 0, MEDIA: 1, BAIXA: 2 };
+  const pendentes = SUGESTOES.filter(s => s.status !== "enviada")
+    .sort((a, b) => (ordemUrg[a.urgencia] ?? 3) - (ordemUrg[b.urgencia] ?? 3));
+  let html = `<div class="pp-titulo">Mentorados pendentes (${pendentes.length})</div>`;
+  html += pendentes.length
+    ? pendentes.map(s => `<div class="pp-item" onclick="irParaCard('${s.id}')"><span class="pp-dot ${classeUrg(s.urgencia)}"></span>${escapar(s.contact_name)}</div>`).join("")
+    : `<div class="pp-vazio">Nenhum pendente.</div>`;
+  pop.innerHTML = html;
+  pop.classList.add("show");
+}
+
+function irParaCard(id) {
+  document.getElementById("pend-pop").classList.remove("show");
+  setTab("todas");
+  const card = document.querySelector(`.card[data-id="${id}"]`);
+  if (card) {
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
+    card.style.boxShadow = "0 0 0 3px hsl(84 78% 55% / 0.55)";
+    setTimeout(() => { card.style.boxShadow = ""; }, 1500);
+  }
+}
+
+function setTab(f) {
+  filtroAtual = f;
+  document.querySelectorAll(".chip").forEach(c => c.classList.toggle("ativo", c.dataset.f === f));
+  render();
+}
+
+function exportarAprendizado() {
+  const correcoes = lerCorrecoes();
+  if (!correcoes.length) { mostrarToast("Nenhuma edição aprendida ainda"); return; }
+  const blob = new Blob([JSON.stringify(correcoes, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "aprendizado-fluxo.json"; a.click();
+  URL.revokeObjectURL(url);
+  mostrarToast(correcoes.length + " aprendizados exportados");
+}
+
+let toastTimer;
+function mostrarToast(txt) {
+  const t = document.getElementById("toast");
+  document.getElementById("toast-txt").textContent = txt || "Copiado";
+  t.classList.add("show"); clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 1600);
+}
+
+// ============================================================
+//  EVENTOS + START
+// ============================================================
+document.querySelectorAll(".chip").forEach(chip => {
+  chip.addEventListener("click", () => {
+    document.querySelectorAll(".chip").forEach(c => c.classList.remove("ativo"));
+    chip.classList.add("ativo"); filtroAtual = chip.dataset.f; render();
+  });
+});
+document.getElementById("busca").addEventListener("input", e => { buscaAtual = e.target.value.toLowerCase(); render(); });
+
+// Fecha o popover de pendentes ao clicar fora dele
+document.addEventListener("click", e => {
+  const pop = document.getElementById("pend-pop");
+  const stat = document.getElementById("stat-pend");
+  if (pop && pop.classList.contains("show") && !pop.contains(e.target) && !stat.contains(e.target)) {
+    pop.classList.remove("show");
+  }
+});
+
+(async function start() {
+  SUGESTOES = await carregarSugestoes();
+  const edicoes = lerEdicoes();
+  SUGESTOES.forEach(s => {
+    s.sugestao_original = s.sugestao_resposta;   // versão original do agente
+    if (edicoes[s.id]) { s.sugestao_resposta = edicoes[s.id].texto; s.editada = true; }
+  });
+  render();
+})();
+</script>
+</body>
+</html>
