@@ -252,32 +252,48 @@
     },
     {
       "parameters": {
-        "select": "channel",
-        "channelId": {
-          "__rl": true,
-          "value": "C0B0GC48EV8",
-          "mode": "id"
+        "method": "POST",
+        "url": "={{ $('Configurar Supabase').item.json.supabase_url }}/rest/v1/relatorios_diarios",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "apikey", "value": "={{ $('Configurar Supabase').item.json.supabase_anon_key }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $('Configurar Supabase').item.json.supabase_anon_key }}" },
+            { "name": "Prefer", "value": "return=minimal" }
+          ]
         },
-        "messageType": "block",
-        "blocksUi": "={{ JSON.stringify($json.blocks) }}",
-        "text": "={{ $json.fallback_text }}",
-        "otherOptions": {}
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ data: new Date().toISOString().slice(0,10), total_mensagens: $('Buscar Stats do Dia').item.json.total_mensagens, mentorados_unicos: $('Buscar Stats do Dia').item.json.mentorados_unicos, nomes_unicos: $('Buscar Stats do Dia').item.json.nomes_unicos, mensagens_respondidas: $('Buscar Stats do Dia').item.json.mensagens_respondidas, mensagens_pendentes: $('Buscar Stats do Dia').item.json.mensagens_pendentes, tempo_medio_min: $('Buscar Stats do Dia').item.json.tempo_medio_min, tempo_mediano_min: $('Buscar Stats do Dia').item.json.tempo_mediano_min, tempo_max_min: $('Buscar Stats do Dia').item.json.tempo_max_min, tempo_min_min: $('Buscar Stats do Dia').item.json.tempo_min_min, criado_em: new Date().toISOString() }) }}",
+        "options": { "timeout": 30000 }
       },
       "id": "734ec933-62bd-4bcb-a442-a2b8d5434ab6",
-      "name": "Slack: Enviar Relatorio Diario",
-      "type": "n8n-nodes-base.slack",
-      "typeVersion": 2.2,
-      "position": [
-        112,
-        752
-      ],
-      "webhookId": "c72c0bb8-dcb0-4b64-906a-31d5a9c7d1b9",
+      "name": "Salvar Relatorio Diario no Painel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [ 112, 752 ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
       "credentials": {
-        "slackApi": {
-          "id": "dBI2K3V3j9FYHqyb",
-          "name": "Slack account"
+        "httpHeaderAuth": {
+          "id": "REPLACE_COM_ID_DA_CREDENCIAL_SUPABASE_HEADER",
+          "name": "Supabase Header Auth"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// CONFIGURAÇÃO DO SUPABASE\n// Troque os valores abaixo pelas credenciais do seu projeto:\n//   supabase.com → Settings → API\n// ============================================================\nreturn [{\n  json: {\n    supabase_url: 'COLOQUE_SUA_SUPABASE_URL_AQUI',\n    supabase_anon_key: 'COLOQUE_SUA_SUPABASE_ANON_KEY_AQUI'\n  }\n}];"
+      },
+      "id": "config-supa-0000-0000-000000000001",
+      "name": "Configurar Supabase",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ -1312, 1280 ]
     },
     {
       "parameters": {
@@ -369,44 +385,36 @@
     },
     {
       "parameters": {
-        "jsCode": "// Agrega todas as conversas e monta UMA mensagem consolidada para o Slack\n// Ordenada por urgência: ALTA → MEDIA → BAIXA\n\nconst urgenciaOrdem = { 'ALTA': 0, 'MEDIA': 1, 'BAIXA': 2 };\n\nconst todos = $('Parse + Merge').all().sort((a, b) => {\n  const ua = urgenciaOrdem[a.json.urgencia] ?? 1;\n  const ub = urgenciaOrdem[b.json.urgencia] ?? 1;\n  if (ua !== ub) return ua - ub;\n  return Number(b.json.horas_aguardando) - Number(a.json.horas_aguardando);\n});\n\nconst emoji = { 'ALTA': '🔴', 'MEDIA': '🟡', 'BAIXA': '🟢' };\n\nlet linhas = [];\n\nfor (const item of todos) {\n  const d = item.json;\n  const urg = (d.urgencia || 'BAIXA').toUpperCase();\n  const em  = emoji[urg] || '⚪';\n  const nome = d.contact_name || 'Sem nome';\n  const horas = d.horas_aguardando || '0';\n  const qtd   = d.qtd_mensagens || 0;\n  const intencao = d.intencao || '';\n  const justificativa = d.justificativa || '';\n  const msgs = (d.mensagens || '').slice(0, 400) + ((d.mensagens || '').length > 400 ? '...' : '');\n  const sugestao = d.sugestao_resposta || '';\n  const lembrete = d.lembrete || '';\n\n  linhas.push(`${em} *${nome}* — ${urg}`);\n  linhas.push(`*Situação:* ${intencao}  |  *Aguardando:* ${horas}h (${qtd} msg)`);\n  if (justificativa) linhas.push(`*Por quê:* ${justificativa}`);\n  linhas.push(`*Mensagem recebida:*\\n\\`\\`\\`${msgs}\\`\\`\\``);\n  linhas.push(`*Sugestão de resposta:*\\n${sugestao}`);\n  if (lembrete) linhas.push(`⚠️ *Lembrete:* ${lembrete}`);\n  linhas.push('──────────────────────────');\n}\n\nlet texto = linhas.join('\\n');\n\n// Slack tem limite de 40.000 chars por mensagem\nif (texto.length > 39000) {\n  texto = texto.slice(0, 39000) + '\\n\\n... *(mensagem truncada — muitas conversas)*';\n}\n\nreturn [{ json: { text: texto } }];\n"
+        "method": "POST",
+        "url": "={{ $('Configurar Supabase').item.json.supabase_url }}/rest/v1/sugestoes",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "apikey", "value": "={{ $('Configurar Supabase').item.json.supabase_anon_key }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $('Configurar Supabase').item.json.supabase_anon_key }}" },
+            { "name": "Prefer", "value": "return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ whatsapp_number: $json.whatsapp_number, contact_name: $json.contact_name, qtd_mensagens: $json.qtd_mensagens, horas_aguardando: $json.horas_aguardando, mensagens: $json.mensagens, urgencia: $json.urgencia, intencao: $json.intencao, justificativa: $json.justificativa, sugestao_resposta: $json.sugestao_resposta, lembrete: $json.lembrete, status: 'pendente', criada_em: new Date().toISOString() }) }}",
+        "options": { "timeout": 30000 }
       },
       "id": "57cccb6a-156e-4cab-ab94-c04787cccc0f",
-      "name": "Montar Mensagem 2 (Resumo)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        672,
-        1024
-      ]
-    },
-    {
-      "parameters": {
-        "select": "channel",
-        "channelId": {
-          "__rl": true,
-          "value": "C0B0GC48EV8",
-          "mode": "id"
-        },
-        "text": "={{ $json.text }}",
-        "otherOptions": {}
-      },
-      "id": "85f5ca79-0ce1-4c94-b383-4e1e8c8f3788",
-      "name": "Slack: Enviar Mensagem 2",
-      "type": "n8n-nodes-base.slack",
-      "typeVersion": 2.2,
-      "position": [
-        896,
-        1024
-      ],
-      "webhookId": "8c073d9d-bfda-4b44-b7b9-320bfb7b3853",
+      "name": "Salvar Sugestao no Painel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [ 2064, 1280 ],
       "retryOnFail": true,
-      "maxTries": 5,
-      "waitBetweenTries": 10000,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
       "credentials": {
-        "slackApi": {
-          "id": "dBI2K3V3j9FYHqyb",
-          "name": "Slack account"
+        "httpHeaderAuth": {
+          "id": "REPLACE_COM_ID_DA_CREDENCIAL_SUPABASE_HEADER",
+          "name": "Supabase Header Auth"
         }
       }
     },
@@ -870,7 +878,7 @@
       "main": [
         [
           {
-            "node": "Slack: Enviar Relatorio Diario",
+            "node": "Salvar Relatorio Diario no Painel",
             "type": "main",
             "index": 0
           }
@@ -878,6 +886,17 @@
       ]
     },
     "Agendamento (seg-sex 9-17h BRT)": {
+      "main": [
+        [
+          {
+            "node": "Configurar Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configurar Supabase": {
       "main": [
         [
           {
@@ -903,18 +922,7 @@
       "main": [
         [
           {
-            "node": "Montar Mensagem 2 (Resumo)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Montar Mensagem 2 (Resumo)": {
-      "main": [
-        [
-          {
-            "node": "Slack: Enviar Mensagem 2",
+            "node": "Salvar Sugestao no Painel",
             "type": "main",
             "index": 0
           }
