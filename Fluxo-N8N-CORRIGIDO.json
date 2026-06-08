@@ -287,7 +287,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// ============================================================\n// CONFIGURAÇÃO DO SUPABASE\n// Troque os valores abaixo pelas credenciais do seu projeto:\n//   supabase.com → Settings → API\n// ============================================================\nreturn [{\n  json: {\n    supabase_url: 'COLOQUE_SUA_SUPABASE_URL_AQUI',\n    supabase_anon_key: 'COLOQUE_SUA_SUPABASE_ANON_KEY_AQUI'\n  }\n}];"
+        "jsCode": "// ============================================================\n// CONFIGURAÇÃO DO SUPABASE\n// Troque os valores abaixo pelas credenciais do seu projeto:\n//   supabase.com → Settings → API\n// ============================================================\nreturn [{\n  json: {\n    supabase_url: 'https://lpuhixhuenpwuawqtcmv.supabase.co',\n    supabase_anon_key: 'sb_publishable_MOkKpnHQ7M26brAxqUMhQQ_iyEtJxS-'\n  }\n}];"
       },
       "id": "config-supa-0000-0000-000000000001",
       "name": "Configurar Supabase",
