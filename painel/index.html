@@ -72,6 +72,50 @@
   .mock-aviso { display: flex; align-items: center; gap: 8px; background: hsl(84 60% 92% / 0.6); border: 1px solid hsl(var(--primary) / 0.35); color: var(--accent-dark); font-size: 12px; border-radius: var(--radius-xs); padding: 8px 14px; margin-top: 16px; }
   .mock-aviso .material-symbols-rounded { font-size: 16px; }
 
+  /* Abas de navegação */
+  .nav-abas { display: flex; gap: 4px; padding: 0 32px; background: hsl(var(--card) / 0.85); backdrop-filter: blur(8px); border-bottom: 1px solid hsl(var(--palette-border)); }
+  .nav-aba { padding: 12px 18px; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; display: flex; align-items: center; gap: 6px; transition: color .15s, border-color .15s; }
+  .nav-aba .material-symbols-rounded { font-size: 17px; }
+  .nav-aba:hover { color: var(--text-primary); }
+  .nav-aba.ativa { color: var(--accent-dark); border-bottom-color: var(--accent-dark); }
+
+  /* Seção de analytics */
+  .analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 860px; margin: 0 auto; padding: 28px 32px; }
+  @media (max-width: 640px) { .analytics-grid { grid-template-columns: 1fr; } }
+  .analytics-card { background: hsl(var(--card)); border: 1px solid hsl(var(--palette-border)); border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow); }
+  .analytics-card.full { grid-column: 1 / -1; }
+  .analytics-titulo { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+  .analytics-titulo .material-symbols-rounded { font-size: 16px; }
+
+  /* Inativos */
+  .inativo-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid hsl(var(--palette-border) / 0.5); }
+  .inativo-item:last-child { border-bottom: none; }
+  .inativo-avatar { width: 32px; height: 32px; border-radius: 999px; background: var(--red-bg); color: var(--red); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .inativo-nome { font-weight: 600; font-size: 13px; color: var(--text-primary); }
+  .inativo-dias { font-size: 12px; color: var(--red); font-weight: 600; margin-left: auto; background: var(--red-bg); border: 1px solid var(--red-bd); border-radius: 999px; padding: 2px 10px; }
+  .inativo-vazio { color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px 0; }
+
+  /* Medidor de contatos */
+  .bar-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .bar-nome { font-size: 13px; font-weight: 500; color: var(--text-primary); width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 8px; background: hsl(var(--muted)); border-radius: 999px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 999px; background: hsl(var(--primary)); transition: width .4s ease; }
+  .bar-qtd { font-size: 12px; font-weight: 700; color: var(--text-secondary); width: 28px; text-align: right; flex-shrink: 0; }
+
+  /* Relatório diário */
+  .relatorio-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  @media (max-width: 600px) { .relatorio-grid { grid-template-columns: 1fr 1fr; } }
+  .relatorio-stat { background: hsl(var(--muted)); border-radius: var(--radius-sm); padding: 14px 16px; }
+  .relatorio-stat .rs-label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+  .relatorio-stat .rs-valor { font-size: 22px; font-weight: 700; color: var(--text-primary); }
+  .relatorio-stat .rs-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+  .relatorio-tempos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media (max-width: 600px) { .relatorio-tempos { grid-template-columns: 1fr 1fr; } }
+  .tempo-box { background: hsl(var(--muted)); border-radius: var(--radius-xs); padding: 10px 12px; }
+  .tempo-box .t-label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+  .tempo-box .t-valor { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-top: 2px; }
+  .sem-dados { color: var(--text-muted); font-size: 13px; text-align: center; padding: 30px 0; }
+
   main { max-width: 860px; margin: 0 auto; padding: 28px 32px; display: grid; gap: 16px; }
   .card { background: hsl(var(--card)); border: 1px solid hsl(var(--palette-border)); border-left: 4px solid hsl(var(--palette-border)); border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow); transition: opacity .2s, box-shadow .2s; }
   .card:hover { box-shadow: var(--shadow-md); }
@@ -142,13 +186,47 @@
       <span class="chip" data-f="RESPONDIDAS">Respondidas</span>
     </div>
   </div>
-  <div class="mock-aviso">
+  <div class="mock-aviso" id="mock-aviso">
     <span class="material-symbols-rounded">info</span>
     Modo demonstração: dados de exemplo. As edições e os aprendizados ficam salvos no seu navegador. Depois, basta apontar para o Supabase.
   </div>
 </header>
 
+<nav class="nav-abas">
+  <div class="nav-aba ativa" data-aba="sugestoes" onclick="trocarAba('sugestoes')">
+    <span class="material-symbols-rounded">forum</span>Sugestões
+  </div>
+  <div class="nav-aba" data-aba="analytics" onclick="trocarAba('analytics')">
+    <span class="material-symbols-rounded">bar_chart</span>Métricas
+  </div>
+  <div class="nav-aba" data-aba="relatorio" onclick="trocarAba('relatorio')">
+    <span class="material-symbols-rounded">calendar_today</span>Relatório Diário
+  </div>
+</nav>
+
 <main id="lista"></main>
+
+<div id="painel-analytics" style="display:none">
+  <div class="analytics-grid">
+    <div class="analytics-card full" id="card-inativos">
+      <div class="analytics-titulo"><span class="material-symbols-rounded">schedule</span>Sem contato há mais de 7 dias</div>
+      <div id="lista-inativos"><div class="inativo-vazio">Carregando...</div></div>
+    </div>
+    <div class="analytics-card full" id="card-medidor">
+      <div class="analytics-titulo"><span class="material-symbols-rounded">leaderboard</span>Volume de contatos por mentorado</div>
+      <div id="lista-medidor"><div class="inativo-vazio">Carregando...</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="painel-relatorio" style="display:none">
+  <div class="analytics-grid">
+    <div class="analytics-card full">
+      <div class="analytics-titulo"><span class="material-symbols-rounded">today</span>Relatório de hoje</div>
+      <div id="relatorio-conteudo"><div class="sem-dados">Carregando...</div></div>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"><span class="material-symbols-rounded">check_circle</span><span id="toast-txt">Copiado</span></div>
 
 <script>
@@ -456,6 +534,162 @@ function mostrarToast(txt) {
 }
 
 // ============================================================
+//  ABAS DE NAVEGAÇÃO
+// ============================================================
+let abaAtual = 'sugestoes';
+
+function trocarAba(aba) {
+  abaAtual = aba;
+  document.querySelectorAll('.nav-aba').forEach(el => el.classList.toggle('ativa', el.dataset.aba === aba));
+  document.getElementById('lista').style.display = aba === 'sugestoes' ? '' : 'none';
+  document.getElementById('painel-analytics').style.display = aba === 'analytics' ? '' : 'none';
+  document.getElementById('painel-relatorio').style.display = aba === 'relatorio' ? '' : 'none';
+  if (aba === 'analytics') carregarAnalytics();
+  if (aba === 'relatorio') carregarRelatorio();
+}
+
+// ============================================================
+//  ANALYTICS — inativos + medidor
+// ============================================================
+async function carregarAnalytics() {
+  await Promise.all([carregarInativos(), carregarMedidor()]);
+}
+
+async function carregarInativos() {
+  const el = document.getElementById('lista-inativos');
+  try {
+    const seteAtras = new Date();
+    seteAtras.setDate(seteAtras.getDate() - 7);
+    const isoLimite = seteAtras.toISOString();
+
+    let contatos = [];
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/contacts?last_message_at=lt.${isoLimite}&order=last_message_at.asc`, {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+      });
+      contatos = r.ok ? await r.json() : [];
+    } else {
+      // mock: simula 2 inativos
+      contatos = [
+        { name: 'Tatiana Pires', whatsapp_number: '5511999991234', last_message_at: new Date(Date.now() - 9 * 86400000).toISOString() },
+        { name: 'Rafael Lemos', whatsapp_number: '5551999992020', last_message_at: new Date(Date.now() - 12 * 86400000).toISOString() }
+      ];
+    }
+
+    if (!contatos.length) {
+      el.innerHTML = `<div class="inativo-vazio">Todos os mentorados entraram em contato nos últimos 7 dias.</div>`;
+      return;
+    }
+
+    el.innerHTML = contatos.map(c => {
+      const dias = Math.floor((Date.now() - new Date(c.last_message_at)) / 86400000);
+      const inicial = (c.name || c.whatsapp_number || '?')[0].toUpperCase();
+      return `<div class="inativo-item">
+        <div class="inativo-avatar">${inicial}</div>
+        <div>
+          <div class="inativo-nome">${escapar(c.name || c.whatsapp_number)}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${escapar(c.whatsapp_number)}</div>
+        </div>
+        <div class="inativo-dias">${dias} dias</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="inativo-vazio">Erro ao carregar dados.</div>`;
+  }
+}
+
+async function carregarMedidor() {
+  const el = document.getElementById('lista-medidor');
+  try {
+    let contatos = [];
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/contacts?order=last_message_at.desc&limit=20`, {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+      });
+      const raw = r.ok ? await r.json() : [];
+      // buscar contagem de mensagens por número
+      const r2 = await fetch(`${SUPABASE_URL}/rest/v1/messages?select=whatsapp_number&direction=eq.incoming`, {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+      });
+      const msgs = r2.ok ? await r2.json() : [];
+      const contagem = {};
+      msgs.forEach(m => { contagem[m.whatsapp_number] = (contagem[m.whatsapp_number] || 0) + 1; });
+      contatos = raw.map(c => ({ ...c, total_msgs: contagem[c.whatsapp_number] || 0 }))
+        .sort((a, b) => b.total_msgs - a.total_msgs);
+    } else {
+      contatos = [
+        { name: 'Carla Nunes', total_msgs: 12 },
+        { name: 'Tatiana Pires', total_msgs: 8 },
+        { name: 'João Bismarck', total_msgs: 5 },
+        { name: 'Sofia Brandão', total_msgs: 4 },
+        { name: 'Erika Montalvao', total_msgs: 3 },
+        { name: 'Rafael Lemos', total_msgs: 1 }
+      ];
+    }
+
+    if (!contatos.length) { el.innerHTML = `<div class="inativo-vazio">Nenhum contato registrado ainda.</div>`; return; }
+    const max = Math.max(...contatos.map(c => c.total_msgs || 0)) || 1;
+    el.innerHTML = contatos.map(c => {
+      const pct = Math.round(((c.total_msgs || 0) / max) * 100);
+      return `<div class="bar-item">
+        <div class="bar-nome">${escapar(c.name || c.whatsapp_number)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+        <div class="bar-qtd">${c.total_msgs || 0}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="inativo-vazio">Erro ao carregar dados.</div>`;
+  }
+}
+
+// ============================================================
+//  RELATÓRIO DIÁRIO
+// ============================================================
+async function carregarRelatorio() {
+  const el = document.getElementById('relatorio-conteudo');
+  try {
+    let d = null;
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+      const hoje = new Date().toISOString().slice(0, 10);
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/relatorios_diarios?data=eq.${hoje}&order=criado_em.desc&limit=1`, {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+      });
+      const arr = r.ok ? await r.json() : [];
+      d = arr[0] || null;
+    } else {
+      d = { total_mensagens: 24, mentorados_unicos: 8, mensagens_respondidas: 20, mensagens_pendentes: 4,
+        nomes_unicos: 'Carla, Tatiana, João, Sofia, Rafael, Erika, Ana, Pedro',
+        tempo_medio_min: 47.3, tempo_mediano_min: 38.0, tempo_max_min: 182.0, tempo_min_min: 4.5 };
+    }
+
+    if (!d) { el.innerHTML = `<div class="sem-dados">Nenhum relatório gerado hoje ainda.<br>O relatório é gerado automaticamente às 18h.</div>`; return; }
+
+    const pct = d.total_mensagens > 0 ? Math.round((d.mensagens_respondidas / d.total_mensagens) * 100) : 0;
+    const fmtMin = v => { if (v == null) return '—'; const n = Number(v); if (isNaN(n)) return '—'; if (n < 60) return n.toFixed(0) + ' min'; return Math.floor(n/60) + 'h ' + Math.round(n%60) + 'min'; };
+    const indicador = Number(d.tempo_medio_min) > 120 ? '🔴' : Number(d.tempo_medio_min) > 30 ? '🟡' : '🟢';
+
+    el.innerHTML = `
+      <div class="relatorio-grid">
+        <div class="relatorio-stat"><div class="rs-label">Mensagens recebidas</div><div class="rs-valor">${d.total_mensagens}</div></div>
+        <div class="relatorio-stat"><div class="rs-label">Mentorados únicos</div><div class="rs-valor">${d.mentorados_unicos}</div></div>
+        <div class="relatorio-stat"><div class="rs-label">Respondidas</div><div class="rs-valor">${d.mensagens_respondidas}</div><div class="rs-sub">${pct}% do total</div></div>
+        <div class="relatorio-stat"><div class="rs-label">Pendentes</div><div class="rs-valor" style="color:${d.mensagens_pendentes > 0 ? 'var(--red)' : 'var(--green)'}">${d.mensagens_pendentes}</div></div>
+      </div>
+      <div class="analytics-titulo" style="margin-bottom:12px">${indicador} Tempo de resposta do CS</div>
+      <div class="relatorio-tempos">
+        <div class="tempo-box"><div class="t-label">Médio</div><div class="t-valor">${fmtMin(d.tempo_medio_min)}</div></div>
+        <div class="tempo-box"><div class="t-label">Mediana</div><div class="t-valor">${fmtMin(d.tempo_mediano_min)}</div></div>
+        <div class="tempo-box"><div class="t-label">Mais rápido</div><div class="t-valor">${fmtMin(d.tempo_min_min)}</div></div>
+        <div class="tempo-box"><div class="t-label">Mais demorado</div><div class="t-valor">${fmtMin(d.tempo_max_min)}</div></div>
+      </div>
+      ${d.nomes_unicos ? `<div style="margin-top:16px;font-size:13px;color:var(--text-secondary)"><b>Mentorados que chamaram:</b> ${escapar(d.nomes_unicos)}</div>` : ''}
+    `;
+  } catch(e) {
+    el.innerHTML = `<div class="sem-dados">Erro ao carregar relatório.</div>`;
+  }
+}
+
+// ============================================================
 //  EVENTOS + START
 // ============================================================
 document.querySelectorAll(".chip").forEach(chip => {
@@ -476,10 +710,14 @@ document.addEventListener("click", e => {
 });
 
 (async function start() {
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    const aviso = document.getElementById('mock-aviso');
+    if (aviso) aviso.style.display = 'none';
+  }
   SUGESTOES = await carregarSugestoes();
   const edicoes = lerEdicoes();
   SUGESTOES.forEach(s => {
-    s.sugestao_original = s.sugestao_resposta;   // versão original do agente
+    s.sugestao_original = s.sugestao_resposta;
     if (edicoes[s.id]) { s.sugestao_resposta = edicoes[s.id].texto; s.editada = true; }
   });
   render();
