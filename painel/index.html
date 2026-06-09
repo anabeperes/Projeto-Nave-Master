@@ -159,7 +159,14 @@
   .divisor .linha { flex: 1; height: 1px; background: hsl(var(--palette-border)); }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--bg-sidebar); color: #fff; font-weight: 600; font-size: 14px; padding: 11px 22px; border-radius: 999px; opacity: 0; pointer-events: none; transition: all .25s; box-shadow: var(--shadow-md); display: inline-flex; align-items: center; gap: 8px; }
   .toast .material-symbols-rounded { font-size: 18px; color: hsl(var(--primary)); }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+  .toast-acao { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border: none; border-radius: 999px; padding: 5px 14px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; margin-left: 4px; }
+  .toast-acao:hover { filter: brightness(0.96); }
+
+  /* Estado de carregamento da fila */
+  #carregando { max-width: 860px; margin: 0 auto; padding: 28px 32px; display: flex; align-items: center; gap: 10px; color: var(--text-muted); font-size: 13px; }
+  #carregando .material-symbols-rounded { font-size: 20px; color: hsl(var(--primary)); animation: girar 1s linear infinite; }
+  @keyframes girar { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -184,7 +191,7 @@
       <span class="material-symbols-rounded">done_all</span>Marcar todas como enviadas
     </button>
     <div class="filtros">
-      <input class="busca" id="busca" placeholder="Buscar por nome...">
+      <input class="busca" id="busca" placeholder="Buscar por nome, assunto... (atalho: /)">
       <span class="chip ativo" data-f="todas">Todas</span>
       <span class="chip" data-f="ALTA">Alta</span>
       <span class="chip" data-f="MEDIA">Média</span>
@@ -210,6 +217,7 @@
   </div>
 </nav>
 
+<div id="carregando"><span class="material-symbols-rounded">progress_activity</span>Carregando sugestões...</div>
 <main id="lista"></main>
 
 <div id="painel-analytics" style="display:none">
@@ -233,7 +241,7 @@
     </div>
   </div>
 </div>
-<div class="toast" id="toast"><span class="material-symbols-rounded">check_circle</span><span id="toast-txt">Copiado</span></div>
+<div class="toast" id="toast"><span class="material-symbols-rounded">check_circle</span><span id="toast-txt">Copiado</span><button class="toast-acao" id="toast-acao" style="display:none"></button></div>
 
 <script>
 // ============================================================
@@ -420,7 +428,10 @@ function montarCard(s) {
 }
 
 function passaFiltros(s) {
-  const passaBusca = !buscaAtual || (s.contact_name || "").toLowerCase().includes(buscaAtual);
+  const passaBusca = !buscaAtual
+    || (s.contact_name || "").toLowerCase().includes(buscaAtual)
+    || (s.mensagens || "").toLowerCase().includes(buscaAtual)
+    || (s.intencao || "").toLowerCase().includes(buscaAtual);
   if (!passaBusca) return false;
   // Aba "Respondidas": só mostra o que já foi enviado
   if (filtroAtual === "RESPONDIDAS") return s.status === "enviada";
@@ -476,11 +487,35 @@ function atualizarStats() {
 // ============================================================
 function copiar(id) {
   const s = SUGESTOES.find(x => x.id === id); if (!s) return;
-  navigator.clipboard.writeText(s.sugestao_resposta).then(() => mostrarToast("Copiado"));
+  navigator.clipboard.writeText(s.sugestao_resposta).then(() => {
+    // Copiar quase sempre é o ato de responder: já oferece marcar como enviada
+    if (s.status !== "enviada") {
+      mostrarToast("Copiado", { acao: { label: "Marcar enviada", fn: () => marcarEnviada(id) } });
+    } else {
+      mostrarToast("Copiado");
+    }
+  });
 }
 
 function editar(id) { editandoId = id; render(); }
-function cancelarEdicao() { editandoId = null; render(); }
+
+// Há alterações não salvas no textarea de edição aberto?
+function edicaoSuja() {
+  if (!editandoId) return false;
+  const t = document.getElementById("edit-" + editandoId);
+  const s = SUGESTOES.find(x => x.id === editandoId);
+  return !!(t && s && t.value.trim() !== (s.sugestao_resposta || "").trim());
+}
+// Confirma antes de descartar uma edição em andamento. Retorna false se o usuário cancelou.
+function confirmarDescarte() {
+  if (edicaoSuja() && !confirm("Descartar as alterações desta resposta?")) return false;
+  editandoId = null;
+  return true;
+}
+function cancelarEdicao() {
+  if (edicaoSuja() && !confirm("Descartar as alterações desta resposta?")) return;
+  editandoId = null; render();
+}
 
 function salvarEdicao(id) {
   const s = SUGESTOES.find(x => x.id === id); if (!s) return;
@@ -517,13 +552,22 @@ function alternarEnviada(id) {
   if (s.status === "enviada") { s.status = "pendente"; s.enviada_em = null; }
   else { s.status = "enviada"; s.enviada_em = new Date().toISOString(); }
 
-  // Persiste o status para sobreviver ao recarregar a página
+  // Persiste o status para sobreviver ao recarregar a página.
+  // O carimbo "em" registra quando a mudança foi feita neste dispositivo,
+  // usado para reconciliar com o Supabase (a alteração mais recente vence).
   const statusSalvos = lerStatus();
-  statusSalvos[id] = { status: s.status, enviada_em: s.enviada_em };
+  statusSalvos[id] = { status: s.status, enviada_em: s.enviada_em, em: new Date().toISOString() };
   salvarStatus(statusSalvos);
   salvarStatusSupabase(id, s.status, s.enviada_em);
 
   render();
+}
+
+// Marca como enviada sem alternar (idempotente) — usado pela ação do toast ao copiar
+function marcarEnviada(id) {
+  const s = SUGESTOES.find(x => x.id === id); if (!s || s.status === "enviada") return;
+  alternarEnviada(id);
+  mostrarToast("Marcada como enviada");
 }
 
 // Marca de uma vez todas as pendentes que estão à vista (respeita busca e filtro)
@@ -534,16 +578,33 @@ function marcarTodasEnviadas() {
 
   const statusSalvos = lerStatus();
   const agora = new Date().toISOString();
+  // Guarda o estado anterior de cada alvo para permitir o "Desfazer"
+  const anteriores = alvos.map(s => ({ id: s.id, status: s.status, enviada_em: s.enviada_em }));
   alvos.forEach(s => {
     s.status = "enviada";
     s.enviada_em = agora;
-    statusSalvos[s.id] = { status: "enviada", enviada_em: agora };
+    statusSalvos[s.id] = { status: "enviada", enviada_em: agora, em: agora };
     salvarStatusSupabase(s.id, "enviada", agora);
   });
   salvarStatus(statusSalvos);
 
   render();
-  mostrarToast(`${alvos.length} marcada(s) como enviada(s)`);
+  mostrarToast(`${alvos.length} marcada(s) como enviada(s)`, { acao: { label: "Desfazer", fn: () => desfazerMarcacao(anteriores) } });
+}
+
+// Restaura o estado anterior das mensagens marcadas em massa
+function desfazerMarcacao(anteriores) {
+  const statusSalvos = lerStatus();
+  const agora = new Date().toISOString();
+  anteriores.forEach(a => {
+    const s = SUGESTOES.find(x => x.id === a.id); if (!s) return;
+    s.status = a.status; s.enviada_em = a.enviada_em;
+    statusSalvos[a.id] = { status: a.status, enviada_em: a.enviada_em, em: agora };
+    salvarStatusSupabase(a.id, a.status, a.enviada_em);
+  });
+  salvarStatus(statusSalvos);
+  render();
+  mostrarToast("Marcação desfeita");
 }
 
 // Lista de mentorados pendentes (contador "Pendentes" clicável)
@@ -574,6 +635,7 @@ function irParaCard(id) {
 }
 
 function setTab(f) {
+  if (!confirmarDescarte()) return;
   filtroAtual = f;
   document.querySelectorAll(".chip").forEach(c => c.classList.toggle("ativo", c.dataset.f === f));
   render();
@@ -591,11 +653,25 @@ function exportarAprendizado() {
 }
 
 let toastTimer;
-function mostrarToast(txt) {
+// opts.acao = { label, fn } adiciona um botão clicável (ex.: "Desfazer", "Marcar enviada")
+function mostrarToast(txt, opts) {
+  opts = opts || {};
   const t = document.getElementById("toast");
   document.getElementById("toast-txt").textContent = txt || "Copiado";
+  const btn = document.getElementById("toast-acao");
+  if (btn) {
+    if (opts.acao && opts.acao.label && typeof opts.acao.fn === "function") {
+      btn.textContent = opts.acao.label;
+      btn.style.display = "";
+      btn.onclick = () => { t.classList.remove("show"); clearTimeout(toastTimer); opts.acao.fn(); };
+    } else {
+      btn.style.display = "none";
+      btn.onclick = null;
+    }
+  }
   t.classList.add("show"); clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), 1600);
+  // Toasts com ação ficam mais tempo na tela para dar tempo de clicar
+  toastTimer = setTimeout(() => t.classList.remove("show"), opts.duracao || (opts.acao ? 6000 : 1600));
 }
 
 // ============================================================
@@ -604,6 +680,7 @@ function mostrarToast(txt) {
 let abaAtual = 'sugestoes';
 
 function trocarAba(aba) {
+  if (!confirmarDescarte()) return;
   abaAtual = aba;
   document.querySelectorAll('.nav-aba').forEach(el => el.classList.toggle('ativa', el.dataset.aba === aba));
   document.getElementById('lista').style.display = aba === 'sugestoes' ? '' : 'none';
@@ -760,11 +837,38 @@ async function carregarRelatorio() {
 // ============================================================
 document.querySelectorAll(".chip").forEach(chip => {
   chip.addEventListener("click", () => {
+    if (!confirmarDescarte()) return;
     document.querySelectorAll(".chip").forEach(c => c.classList.remove("ativo"));
     chip.classList.add("ativo"); filtroAtual = chip.dataset.f; render();
   });
 });
 document.getElementById("busca").addEventListener("input", e => { buscaAtual = e.target.value.toLowerCase(); render(); });
+
+// ============================================================
+//  ATALHOS DE TECLADO (operação rápida no teclado)
+//   /            → foca a busca
+//   Esc          → fecha popover / cancela edição / sai da busca
+//   Ctrl/Cmd+Enter → salva a edição aberta
+// ============================================================
+document.addEventListener("keydown", e => {
+  const ativo = document.activeElement;
+  const digitando = /^(INPUT|TEXTAREA)$/.test(ativo && ativo.tagName);
+
+  // Ctrl/Cmd+Enter salva a edição em andamento
+  if (editandoId && (e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); salvarEdicao(editandoId); return; }
+
+  if (e.key === "Escape") {
+    const pop = document.getElementById("pend-pop");
+    if (pop && pop.classList.contains("show")) { pop.classList.remove("show"); return; }
+    if (editandoId) { cancelarEdicao(); return; }
+    if (digitando && ativo.classList.contains("busca")) { ativo.blur(); }
+    return;
+  }
+
+  if (digitando) return; // não captura "/" enquanto o usuário digita
+
+  if (e.key === "/") { e.preventDefault(); const b = document.getElementById("busca"); if (b) b.focus(); }
+});
 
 // Fecha o popover de pendentes ao clicar fora dele
 document.addEventListener("click", e => {
@@ -775,6 +879,49 @@ document.addEventListener("click", e => {
   }
 });
 
+// Reconcilia o status de uma sugestão entre a fonte (remoto/mock) e o que foi
+// salvo localmente. No modo demonstração, o local manda. No modo Supabase, a
+// alteração mais recente vence — assim o status feito em outro dispositivo (que
+// chega pelo banco) não é sobrescrito por um estado local antigo, e vice-versa.
+function reconciliarStatus(s, local) {
+  if (!local) return;
+  if (usandoMock) { s.status = local.status; s.enviada_em = local.enviada_em; return; }
+  const tLocal = local.em ? new Date(local.em).getTime() : 0;
+  const tRemoto = s.enviada_em ? new Date(s.enviada_em).getTime() : 0;
+  if (tLocal >= tRemoto) { s.status = local.status; s.enviada_em = local.enviada_em; }
+}
+
+// Aplica edições salvas e reconcilia o status sobre a lista vinda da fonte de dados
+function aplicarPersistencia(lista) {
+  const edicoes = lerEdicoes();
+  const statusSalvos = lerStatus();
+  lista.forEach(s => {
+    s.sugestao_original = s.sugestao_resposta;
+    if (edicoes[s.id]) { s.sugestao_resposta = edicoes[s.id].texto; s.editada = true; }
+    reconciliarStatus(s, statusSalvos[s.id]);
+  });
+  return lista;
+}
+
+// Recarrega a fila da fonte de dados sem atrapalhar uma edição em andamento.
+// Mantém a fila atualizada com mensagens novas que chegam pelo WhatsApp.
+let recarregando = false;
+async function recarregarFila() {
+  if (editandoId || recarregando) return;
+  recarregando = true;
+  try {
+    const novas = await carregarSugestoes();
+    SUGESTOES = aplicarPersistencia(novas);
+    const aviso = document.getElementById('mock-aviso');
+    if (aviso) aviso.style.display = usandoMock ? '' : 'none';
+    render();
+  } catch (e) {
+    console.error('Falha ao recarregar a fila (mantendo a atual):', e);
+  } finally {
+    recarregando = false;
+  }
+}
+
 (async function start() {
   try {
     SUGESTOES = await carregarSugestoes();
@@ -783,18 +930,17 @@ document.addEventListener("click", e => {
     SUGESTOES = MOCK;
     usandoMock = true;
   }
-  const edicoes = lerEdicoes();
-  const statusSalvos = lerStatus();
-  SUGESTOES.forEach(s => {
-    s.sugestao_original = s.sugestao_resposta;
-    if (edicoes[s.id]) { s.sugestao_resposta = edicoes[s.id].texto; s.editada = true; }
-    // Reaplica o status salvo localmente (respondida / reaberta) por cima da fonte de dados
-    if (statusSalvos[s.id]) { s.status = statusSalvos[s.id].status; s.enviada_em = statusSalvos[s.id].enviada_em; }
-  });
+  aplicarPersistencia(SUGESTOES);
   // Só esconde o aviso de demonstração quando os dados vieram mesmo do Supabase
   const aviso = document.getElementById('mock-aviso');
   if (aviso) aviso.style.display = usandoMock ? '' : 'none';
+  const carregando = document.getElementById('carregando');
+  if (carregando) carregando.style.display = 'none';
   render();
+
+  // Mantém a fila viva: atualiza a cada 60s e ao voltar para a aba do navegador
+  setInterval(recarregarFila, 60000);
+  window.addEventListener('focus', recarregarFila);
 })();
 </script>
 </body>
