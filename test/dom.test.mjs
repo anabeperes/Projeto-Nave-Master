@@ -173,3 +173,34 @@ test('marcar todas respeita o filtro de urgência (só marca o que está à vist
   assert.equal(doc.getElementById('st-pend').textContent, '3', 'só a ALTA deveria ter sido marcada');
   dom.window.close();
 });
+
+test('busca encontra por assunto/intenção, não só por nome', async () => {
+  const ls = criarLocalStorageCompartilhado();
+  const dom = await carregarPainel(ls);
+  const doc = dom.window.document;
+
+  // "criativo" só aparece na mensagem do id 2 (Erika), não no nome de ninguém
+  const busca = doc.getElementById('busca');
+  busca.value = 'criativo';
+  busca.dispatchEvent(new dom.window.Event('input'));
+
+  const cards = doc.querySelectorAll('#lista .card');
+  assert.equal(cards.length, 1, 'deveria achar só a mensagem que fala de criativo');
+  assert.equal(cards[0].getAttribute('data-id'), '2', 'o card encontrado deveria ser o id 2');
+  dom.window.close();
+});
+
+test('marcarEnviada tira da fila e persiste (ação do toast ao copiar)', async () => {
+  const ls = criarLocalStorageCompartilhado();
+  const dom = await carregarPainel(ls);
+  const doc = dom.window.document;
+
+  assert.ok(cardPendente(doc, '4'), 'id 4 deveria começar pendente');
+  // marcarEnviada é a função disparada pela ação "Marcar enviada" do toast ao copiar
+  dom.window.marcarEnviada('4');
+  assert.equal(cardPendente(doc, '4'), null, 'id 4 deveria sair das pendentes');
+
+  const salvo = JSON.parse(ls.getItem('fluxo_status') || '{}');
+  assert.equal(salvo['4']?.status, 'enviada', 'status deveria persistir no localStorage');
+  dom.window.close();
+});
