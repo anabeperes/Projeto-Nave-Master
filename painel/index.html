@@ -506,7 +506,6 @@ function passaFiltros(s) {
 function render() {
   const lista = document.getElementById("lista");
   const visiveis = SUGESTOES.filter(passaFiltros);
-  const ordemUrg = { ALTA: 0, MEDIA: 1, BAIXA: 2 };
 
   let html;
   if (filtroAtual === "RESPONDIDAS") {
@@ -515,7 +514,8 @@ function render() {
       ? respondidas.map(montarCard).join("")
       : `<div class="vazio">Nenhuma mensagem respondida ainda.</div>`;
   } else {
-    const pendentes = visiveis.sort((a, b) => (ordemUrg[a.urgencia] ?? 3) - (ordemUrg[b.urgencia] ?? 3));
+    // Pendentes: sempre da mais recente para a mais antiga (por data de criação)
+    const pendentes = visiveis.sort((a, b) => new Date(b.criada_em) - new Date(a.criada_em));
     html = pendentes.length
       ? pendentes.map(montarCard).join("")
       : `<div class="vazio">Nenhuma sugestão pendente.</div>`;
@@ -675,9 +675,8 @@ function togglePendentes(e) {
   if (e) e.stopPropagation();
   const pop = document.getElementById("pend-pop");
   if (pop.classList.contains("show")) { pop.classList.remove("show"); return; }
-  const ordemUrg = { ALTA: 0, MEDIA: 1, BAIXA: 2 };
   const pendentes = SUGESTOES.filter(s => s.status !== "enviada")
-    .sort((a, b) => (ordemUrg[a.urgencia] ?? 3) - (ordemUrg[b.urgencia] ?? 3));
+    .sort((a, b) => new Date(b.criada_em) - new Date(a.criada_em));
   let html = `<div class="pp-titulo">Mentorados pendentes (${pendentes.length})</div>`;
   html += pendentes.length
     ? pendentes.map(s => `<div class="pp-item" onclick="irParaCard('${s.id}')"><span class="pp-dot ${classeUrg(s.urgencia)}"></span>${escapar(s.contact_name)}</div>`).join("")
