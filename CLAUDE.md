@@ -8,7 +8,7 @@ O painel da Navegadora (`painel/index.html`) é a interface onde o CS vê as sug
 
 ```
 npm start        # abre em http://localhost:3000
-npm test         # smoke test do servidor + da fiação do painel
+npm test         # smoke test do servidor + teste de DOM (jsdom) do painel
 ```
 
 `npm start` sobe um servidor estático sem dependências (`server.mjs`). Use http (não abra o arquivo direto via `file://`), porque o painel depende de `fetch` e da área de transferência.

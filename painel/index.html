@@ -267,11 +267,17 @@ async function carregarSugestoes() {
 
 async function salvarStatusSupabase(id, status, enviadaEm) {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
-  await fetch(`${SUPABASE_URL}/rest/v1/sugestoes?id=eq.${id}`, {
-    method: 'PATCH',
-    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-    body: JSON.stringify({ status, enviada_em: enviadaEm })
-  });
+  // A persistência local (localStorage) já garante o estado; o Supabase é o espelho.
+  // Se a gravação remota falhar, não deixamos o erro quebrar a ação do usuário.
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/sugestoes?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ status, enviada_em: enviadaEm })
+    });
+  } catch (e) {
+    console.error('Não foi possível gravar o status no Supabase (mantido localmente):', e);
+  }
 }
 
 async function salvarEdicaoSupabase(id, textoEditado) {
