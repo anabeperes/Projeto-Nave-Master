@@ -253,7 +253,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $('Configurar Supabase').item.json.supabase_url }}/rest/v1/relatorios_diarios",
+        "url": "={{ $('Configurar Supabase 18h').item.json.supabase_url }}/rest/v1/relatorios_diarios",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -265,11 +265,11 @@
             },
             {
               "name": "apikey",
-              "value": "={{ $('Configurar Supabase').item.json.supabase_anon_key }}"
+              "value": "={{ $('Configurar Supabase 18h').item.json.supabase_anon_key }}"
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $('Configurar Supabase').item.json.supabase_anon_key }}"
+              "value": "=Bearer {{ $('Configurar Supabase 18h').item.json.supabase_anon_key }}"
             },
             {
               "name": "Prefer",
@@ -392,7 +392,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "// Guard: verificar se a API retornou erro\nif ($json.error || !$json.content || !Array.isArray($json.content) || $json.content.length === 0) {\n  const orig = $('Montar Request: Redator').item?.json || {};\n  return { json: { _api_error: true, error_detail: $json.error || 'resposta vazia', ...orig } };\n}\n\n// Parse da resposta do Redator + monta o objeto final para os nós de Slack\n\n// Pular itens com erro de API\nif ($json._api_error) {\n  return { json: { _skipped: true, error_detail: $json.error_detail } };\n}\n\nconst redatorResp = $json;\nconst original = $('Montar Request: Redator').item.json;\n\nconst rawText = (redatorResp.content?.[0]?.text || '').trim();\n\nconst respostaMatch = rawText.match(/RESPOSTA_FINAL:\\s*([\\s\\S]+?)(?=\\n\\nNOTA_PARA_O_CS:|$)/);\nconst notaMatch     = rawText.match(/NOTA_PARA_O_CS:\\s*([\\s\\S]+?)$/);\n\nconst sugestaoResposta = respostaMatch ? respostaMatch[1].trim() : rawText;\nconst lembrete = notaMatch ? notaMatch[1].trim().replace(/^nenhuma$/i, '') : '';\n\nreturn {\n  json: {\n    whatsapp_number: original.whatsapp_number,\n    contact_name: original.contact_name || 'Sem nome',\n    qtd_mensagens: Number(original.qtd_mensagens),\n    horas_aguardando: original.horas_aguardando,\n    mensagens: original.mensagens_concatenadas,\n    urgencia: (original.urgencia || 'MEDIA').toUpperCase(),\n    intencao: (original.categoria || 'NAO_MAPEADA').toUpperCase(),\n    justificativa: original.motivo || '',\n    sugestao_resposta: sugestaoResposta,\n    lembrete\n  }\n};"
+        "jsCode": "// Guard: se a API falhou ou veio resposta vazia, descarta o item\n// (evita inserir linha vazia em sugestoes no painel)\nif ($json._api_error || $json.error || !$json.content || !Array.isArray($json.content) || $json.content.length === 0) {\n  return null;\n}\n\n// Parse da resposta do Redator + monta o objeto final\nconst redatorResp = $json;\nconst original = $('Montar Request: Redator').item.json;\n\nconst rawText = (redatorResp.content?.[0]?.text || '').trim();\n\nconst respostaMatch = rawText.match(/RESPOSTA_FINAL:\\s*([\\s\\S]+?)(?=\\n\\nNOTA_PARA_O_CS:|$)/);\nconst notaMatch     = rawText.match(/NOTA_PARA_O_CS:\\s*([\\s\\S]+?)$/);\n\nconst sugestaoResposta = respostaMatch ? respostaMatch[1].trim() : rawText;\nconst lembrete = notaMatch ? notaMatch[1].trim().replace(/^nenhuma$/i, '') : '';\n\nreturn {\n  json: {\n    whatsapp_number: original.whatsapp_number,\n    contact_name: original.contact_name || 'Sem nome',\n    qtd_mensagens: Number(original.qtd_mensagens),\n    horas_aguardando: original.horas_aguardando,\n    mensagens: original.mensagens_concatenadas,\n    urgencia: (original.urgencia || 'MEDIA').toUpperCase(),\n    intencao: (original.categoria || 'NAO_MAPEADA').toUpperCase(),\n    justificativa: original.motivo || '',\n    sugestao_resposta: sugestaoResposta,\n    lembrete\n  }\n};"
       },
       "id": "509c8acb-9ebf-4b00-bff0-4e42f02cf909",
       "name": "Parse + Merge",
@@ -750,6 +750,19 @@
         }
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// CONFIGURAÇÃO DO SUPABASE\n// Troque os valores abaixo pelas credenciais do seu projeto:\n//   supabase.com → Settings → API\n// ============================================================\nreturn [{\n  json: {\n    supabase_url: 'https://lpuhixhuenpwuawqtcmv.supabase.co',\n    supabase_anon_key: 'sb_publishable_MOkKpnHQ7M26brAxqUMhQQ_iyEtJxS-'\n  }\n}];"
+      },
+      "id": "c8a04c10-7dd8-4b9f-baf8-30291457a7bc",
+      "name": "Configurar Supabase 18h",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        -320
+      ]
     }
   ],
   "pinData": {},
@@ -849,7 +862,7 @@
       "main": [
         [
           {
-            "node": "Buscar Stats do Dia",
+            "node": "Configurar Supabase 18h",
             "type": "main",
             "index": 0
           }
@@ -1015,6 +1028,17 @@
         [
           {
             "node": "Parse + Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configurar Supabase 18h": {
+      "main": [
+        [
+          {
+            "node": "Buscar Stats do Dia",
             "type": "main",
             "index": 0
           }
