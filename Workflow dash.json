@@ -304,7 +304,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// ============================================================\n// CONFIGURAÇÃO DO SUPABASE\n// Troque os valores abaixo pelas credenciais do seu projeto:\n//   supabase.com → Settings → API\n// ============================================================\nreturn [{\n  json: {\n    supabase_url: 'https://lpuhixhuenpwuawqtcmv.supabase.co',\n    supabase_anon_key: 'sb_publishable_MOkKpnHQ7M26brAxqUMhQQ_iyEtJxS-'\n  }\n}];"
+        "jsCode": "// ============================================================\n// CONFIGURAÇÃO DO SUPABASE\n// IMPORTANTE: use a chave SECRETA (service_role / sb_secret_...), NAO a publishable.\n// Ela permite ao n8n salvar as sugestoes mesmo com a trava (RLS) ligada.\n// Pegue em: supabase.com → Settings → API → Secret key\n// Cole sua chave secreta no lugar de COLE_AQUI_SUA_SECRET_KEY abaixo.\n// ============================================================\nreturn [{\n  json: {\n    supabase_url: 'https://lpuhixhuenpwuawqtcmv.supabase.co',\n    supabase_anon_key: 'COLE_AQUI_SUA_SECRET_KEY'\n  }\n}];"
       },
       "id": "38e59d0c-aba0-4efa-aa5d-bbfbb5f41685",
       "name": "Configurar Supabase",
@@ -753,7 +753,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// ============================================================\n// CONFIGURAÇÃO DO SUPABASE\n// Troque os valores abaixo pelas credenciais do seu projeto:\n//   supabase.com → Settings → API\n// ============================================================\nreturn [{\n  json: {\n    supabase_url: 'https://lpuhixhuenpwuawqtcmv.supabase.co',\n    supabase_anon_key: 'sb_publishable_MOkKpnHQ7M26brAxqUMhQQ_iyEtJxS-'\n  }\n}];"
+        "jsCode": "// ============================================================\n// CONFIGURAÇÃO DO SUPABASE\n// IMPORTANTE: use a chave SECRETA (service_role / sb_secret_...), NAO a publishable.\n// Ela permite ao n8n salvar as sugestoes mesmo com a trava (RLS) ligada.\n// Pegue em: supabase.com → Settings → API → Secret key\n// Cole sua chave secreta no lugar de COLE_AQUI_SUA_SECRET_KEY abaixo.\n// ============================================================\nreturn [{\n  json: {\n    supabase_url: 'https://lpuhixhuenpwuawqtcmv.supabase.co',\n    supabase_anon_key: 'COLE_AQUI_SUA_SECRET_KEY'\n  }\n}];"
       },
       "id": "c8a04c10-7dd8-4b9f-baf8-30291457a7bc",
       "name": "Configurar Supabase 18h",
