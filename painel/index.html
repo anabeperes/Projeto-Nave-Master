@@ -253,12 +253,12 @@ async function carregarSugestoes() {
   return MOCK;
 }
 
-async function marcarEnviadaSupabase(id) {
+async function salvarStatusSupabase(id, status, enviadaEm) {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
   await fetch(`${SUPABASE_URL}/rest/v1/sugestoes?id=eq.${id}`, {
     method: 'PATCH',
     headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-    body: JSON.stringify({ status: 'enviada', enviada_em: new Date().toISOString() })
+    body: JSON.stringify({ status, enviada_em: enviadaEm })
   });
 }
 
@@ -322,11 +322,15 @@ const MOCK = [
 // ============================================================
 const KEY_EDICOES = "fluxo_edicoes";
 const KEY_CORRECOES = "fluxo_correcoes";
+const KEY_STATUS = "fluxo_status";
 
 function lerEdicoes() { try { return JSON.parse(localStorage.getItem(KEY_EDICOES) || "{}"); } catch (e) { return {}; } }
 function salvarEdicoes(obj) { localStorage.setItem(KEY_EDICOES, JSON.stringify(obj)); }
 function lerCorrecoes() { try { return JSON.parse(localStorage.getItem(KEY_CORRECOES) || "[]"); } catch (e) { return []; } }
 function salvarCorrecoes(arr) { localStorage.setItem(KEY_CORRECOES, JSON.stringify(arr)); }
+// Status de cada sugestão (respondida / reaberta) — persiste entre recarregamentos da página
+function lerStatus() { try { return JSON.parse(localStorage.getItem(KEY_STATUS) || "{}"); } catch (e) { return {}; } }
+function salvarStatus(obj) { localStorage.setItem(KEY_STATUS, JSON.stringify(obj)); }
 
 // ============================================================
 //  ESTADO + RENDER
@@ -478,6 +482,13 @@ function alternarEnviada(id) {
   const s = SUGESTOES.find(x => x.id === id); if (!s) return;
   if (s.status === "enviada") { s.status = "pendente"; s.enviada_em = null; }
   else { s.status = "enviada"; s.enviada_em = new Date().toISOString(); }
+
+  // Persiste o status para sobreviver ao recarregar a página
+  const statusSalvos = lerStatus();
+  statusSalvos[id] = { status: s.status, enviada_em: s.enviada_em };
+  salvarStatus(statusSalvos);
+  salvarStatusSupabase(id, s.status, s.enviada_em);
+
   render();
 }
 
@@ -716,9 +727,12 @@ document.addEventListener("click", e => {
   }
   SUGESTOES = await carregarSugestoes();
   const edicoes = lerEdicoes();
+  const statusSalvos = lerStatus();
   SUGESTOES.forEach(s => {
     s.sugestao_original = s.sugestao_resposta;
     if (edicoes[s.id]) { s.sugestao_resposta = edicoes[s.id].texto; s.editada = true; }
+    // Reaplica o status salvo localmente (respondida / reaberta) por cima da fonte de dados
+    if (statusSalvos[s.id]) { s.status = statusSalvos[s.id].status; s.enviada_em = statusSalvos[s.id].enviada_em; }
   });
   render();
 })();
