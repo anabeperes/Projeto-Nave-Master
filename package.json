@@ -1,10 +1,12 @@
 {
   "name": "nave-master",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Painel da Navegadora + sistema multi-agente de CS da Mentoria Fluxo",
+  "main": "server.mjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.mjs",
+    "serve": "node server.mjs",
+    "test": "node test/smoke.mjs"
   },
   "keywords": [],
   "author": "",

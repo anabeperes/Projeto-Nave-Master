@@ -2,7 +2,21 @@
 
 Assistente de CS multi-agente para a Mentoria Fluxo. Responde dúvidas de mentorados via WhatsApp com agentes especializados.
 
-## Como testar
+## Como rodar o painel
+
+O painel da Navegadora (`painel/index.html`) é a interface onde o CS vê as sugestões, edita, copia e marca como respondida.
+
+```
+npm start        # abre em http://localhost:3000
+npm test         # smoke test do servidor + da fiação do painel
+```
+
+`npm start` sobe um servidor estático sem dependências (`server.mjs`). Use http (não abra o arquivo direto via `file://`), porque o painel depende de `fetch` e da área de transferência.
+
+- **Fonte de dados:** se `SUPABASE_URL`/`SUPABASE_ANON_KEY` (no topo do `<script>`) estiverem preenchidos e acessíveis, busca do Supabase. Se o Supabase falhar, estiver fora do ar ou vazio, cai automaticamente no modo demonstração (dados de exemplo).
+- **Persistência local:** edições, aprendizados e o status de cada mensagem (respondida/reaberta) ficam no `localStorage` do navegador e sobrevivem ao recarregar a página. Com Supabase configurado, o status também é gravado lá.
+
+## Como testar (agentes)
 
 Sem histórico: `Simula mensagem: [mensagem do mentorado]`
 

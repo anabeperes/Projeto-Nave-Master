@@ -242,14 +242,26 @@ const SUPABASE_ANON_KEY = 'sb_publishable_MOkKpnHQ7M26brAxqUMhQQ_iyEtJxS-';
 //  Se SUPABASE_URL estiver preenchido, busca do banco.
 //  Se não, usa dados de demonstração (MOCK).
 // ============================================================
+let usandoMock = false;
+
 async function carregarSugestoes() {
   if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/sugestoes?order=criada_em.asc`, {
-      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
-    });
-    if (!r.ok) { console.error('Erro ao buscar sugestões do Supabase:', r.status); return MOCK; }
-    return await r.json();
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/sugestoes?order=criada_em.asc`, {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+      });
+      if (!r.ok) { console.error('Erro ao buscar sugestões do Supabase:', r.status); usandoMock = true; return MOCK; }
+      const dados = await r.json();
+      // Se o banco ainda não tem sugestões, cai no modo demonstração
+      if (!Array.isArray(dados) || dados.length === 0) { usandoMock = true; return MOCK; }
+      return dados;
+    } catch (e) {
+      console.error('Falha de rede ao buscar do Supabase, usando dados de demonstração:', e);
+      usandoMock = true;
+      return MOCK;
+    }
   }
+  usandoMock = true;
   return MOCK;
 }
 
@@ -721,11 +733,13 @@ document.addEventListener("click", e => {
 });
 
 (async function start() {
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-    const aviso = document.getElementById('mock-aviso');
-    if (aviso) aviso.style.display = 'none';
+  try {
+    SUGESTOES = await carregarSugestoes();
+  } catch (e) {
+    console.error('Erro inesperado ao iniciar, usando dados de demonstração:', e);
+    SUGESTOES = MOCK;
+    usandoMock = true;
   }
-  SUGESTOES = await carregarSugestoes();
   const edicoes = lerEdicoes();
   const statusSalvos = lerStatus();
   SUGESTOES.forEach(s => {
@@ -734,6 +748,9 @@ document.addEventListener("click", e => {
     // Reaplica o status salvo localmente (respondida / reaberta) por cima da fonte de dados
     if (statusSalvos[s.id]) { s.status = statusSalvos[s.id].status; s.enviada_em = statusSalvos[s.id].enviada_em; }
   });
+  // Só esconde o aviso de demonstração quando os dados vieram mesmo do Supabase
+  const aviso = document.getElementById('mock-aviso');
+  if (aviso) aviso.style.display = usandoMock ? '' : 'none';
   render();
 })();
 </script>
