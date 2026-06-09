@@ -102,7 +102,7 @@
         "operation": "executeQuery",
         "query": "SELECT upsert_contact($1, $2) AS contact_id;",
         "options": {
-          "queryReplacement": "={{ [$json.whatsapp_number, $json.contact_name] }}"
+          "queryReplacement": "={{ $json.whatsapp_number }},={{ $json.contact_name }}"
         }
       },
       "id": "5d6969e9-003a-423f-b8bb-f3eb97367656",
@@ -125,7 +125,7 @@
         "operation": "executeQuery",
         "query": "INSERT INTO messages (contact_id, whatsapp_number, contact_name, direction, content, evolution_msg_id, status, instancia)\nVALUES ($1, $2, $3, 'incoming', $4, $5, 'unread', $6)\nON CONFLICT (evolution_msg_id) DO NOTHING\nRETURNING id;",
         "options": {
-          "queryReplacement": "={{ [$json.contact_id, $('Normalizar Payload').item.json.whatsapp_number, $('Normalizar Payload').item.json.contact_name, $('Normalizar Payload').item.json.content, $('Normalizar Payload').item.json.evolution_msg_id, $('Normalizar Payload').item.json.instancia] }}"
+          "queryReplacement": "={{ $json.contact_id }},={{ $('Normalizar Payload').item.json.whatsapp_number }},={{ $('Normalizar Payload').item.json.contact_name }},={{ $('Normalizar Payload').item.json.content }},={{ $('Normalizar Payload').item.json.evolution_msg_id }},={{ $('Normalizar Payload').item.json.instancia }}"
         }
       },
       "id": "b7141b35-91b6-464c-a556-83fa141e3727",
