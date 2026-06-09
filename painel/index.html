@@ -167,6 +167,32 @@
   #carregando { max-width: 860px; margin: 0 auto; padding: 28px 32px; display: flex; align-items: center; gap: 10px; color: var(--text-muted); font-size: 13px; }
   #carregando .material-symbols-rounded { font-size: 20px; color: hsl(var(--primary)); animation: girar 1s linear infinite; }
   @keyframes girar { to { transform: rotate(360deg); } }
+
+  /* Tela de login (só aparece quando o Supabase Auth está ativo) */
+  #tela-login { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; padding: 24px;
+    background: radial-gradient(circle at 30% 20%, hsl(84 35% 92%) 0%, transparent 55%), hsl(var(--background)); }
+  #tela-login.show { display: flex; }
+  .login-card { width: 100%; max-width: 360px; background: hsl(var(--card)); border: 1px solid hsl(var(--palette-border)); border-radius: var(--radius); box-shadow: var(--shadow-md); padding: 28px 26px; }
+  .login-card .brand-dot { width: 40px; height: 40px; border-radius: 12px; margin-bottom: 16px; }
+  .login-card .brand-dot .material-symbols-rounded { font-size: 24px; }
+  .login-card h2 { font-family: 'Public Sans', 'Inter', sans-serif; font-size: 19px; font-weight: 700; color: #0f172a; }
+  .login-card p.sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; margin-bottom: 20px; }
+  .login-card label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin: 12px 0 5px; }
+  .login-card input { width: 100%; background: hsl(var(--card)); border: 1px solid hsl(var(--palette-input)); border-radius: var(--radius-xs); padding: 10px 13px; font-size: 14px; font-family: inherit; color: var(--text-primary); outline: none; transition: border-color .2s, box-shadow .2s; }
+  .login-card input:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 3px hsl(84 78% 55% / 0.18); }
+  .login-card button { width: 100%; margin-top: 20px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border: none; border-radius: var(--radius-xs); padding: 11px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: filter .15s; }
+  .login-card button:hover { filter: brightness(0.97); }
+  .login-card button:disabled { opacity: .6; cursor: default; }
+  .login-erro { display: none; margin-top: 14px; background: var(--red-bg); border: 1px solid var(--red-bd); color: var(--red); font-size: 13px; border-radius: var(--radius-xs); padding: 9px 12px; }
+  .login-erro.show { display: block; }
+
+  /* Identidade do atendente logado + sair (no header) */
+  .sessao { display: inline-flex; align-items: center; gap: 8px; margin-left: 12px; }
+  .sessao .quem { font-size: 12px; color: var(--text-secondary); }
+  .sessao .quem b { color: var(--text-primary); }
+  .btn-sair { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-secondary); background: hsl(var(--card)); border: 1px solid hsl(var(--palette-border)); border-radius: 999px; padding: 5px 11px; cursor: pointer; font-family: inherit; }
+  .btn-sair:hover { color: var(--text-primary); border-color: hsl(var(--primary) / 0.5); }
+  .btn-sair .material-symbols-rounded { font-size: 15px; }
 </style>
 </head>
 <body>
@@ -178,6 +204,10 @@
     <button class="link-aprendizado" id="btn-aprendizado" onclick="exportarAprendizado()" title="Baixar as edições aprendidas em JSON">
       <span class="material-symbols-rounded">school</span><span id="aprendizado-count">0</span> aprendizados
     </button>
+    <span class="sessao" id="sessao" style="display:none">
+      <span class="quem">WhatsApp: <b id="sessao-quem"></b></span>
+      <button class="btn-sair" onclick="sair()"><span class="material-symbols-rounded">logout</span>Sair</button>
+    </span>
   </div>
   <div class="toolbar">
     <div class="pend-wrap">
@@ -243,6 +273,23 @@
 </div>
 <div class="toast" id="toast"><span class="material-symbols-rounded">check_circle</span><span id="toast-txt">Copiado</span><button class="toast-acao" id="toast-acao" style="display:none"></button></div>
 
+<div id="tela-login">
+  <form class="login-card" id="form-login" onsubmit="fazerLogin(event)">
+    <span class="brand-dot"><span class="material-symbols-rounded">forum</span></span>
+    <h2>Painel da Navegadora</h2>
+    <p class="sub">Entre com seu e-mail e senha para ver as mensagens do seu WhatsApp.</p>
+    <label for="login-email">E-mail</label>
+    <input type="email" id="login-email" autocomplete="username" required>
+    <label for="login-senha">Senha</label>
+    <input type="password" id="login-senha" autocomplete="current-password" required>
+    <button type="submit" id="login-btn">Entrar</button>
+    <div class="login-erro" id="login-erro"></div>
+  </form>
+</div>
+
+<!-- SDK do Supabase: usado só para o login (Auth). Em modo demonstração/testes,
+     este script não carrega e o painel funciona sem login, como antes. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ============================================================
 //  CONFIGURAÇÃO SUPABASE
@@ -250,6 +297,22 @@
 // ============================================================
 const SUPABASE_URL = 'https://lpuhixhuenpwuawqtcmv.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_MOkKpnHQ7M26brAxqUMhQQ_iyEtJxS-';
+
+// ============================================================
+//  LOGIN (Supabase Auth) — cada atendente vê só o seu WhatsApp
+//  O RLS no banco faz a separação; aqui só guardamos o token de
+//  quem entrou e o enviamos em toda chamada ao Supabase.
+//  Em modo demonstração/testes (sem o SDK), nada disso roda.
+// ============================================================
+const authAtivo = typeof window !== 'undefined' && window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY;
+const sbClient = authAtivo ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+let sessaoToken = null; // access_token do usuário logado (ou null no modo demo)
+
+// Cabeçalhos do Supabase: usa o token do usuário quando logado; senão, a chave anônima.
+function sbHeaders(extra) {
+  const token = sessaoToken || SUPABASE_ANON_KEY;
+  return Object.assign({ apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + token }, extra || {});
+}
 
 // ============================================================
 //  FONTE DE DADOS
@@ -262,7 +325,7 @@ async function carregarSugestoes() {
   if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     try {
       const r = await fetch(`${SUPABASE_URL}/rest/v1/sugestoes?order=criada_em.asc`, {
-        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+        headers: sbHeaders()
       });
       if (!r.ok) { console.error('Erro ao buscar sugestões do Supabase:', r.status); usandoMock = true; return MOCK; }
       const dados = await r.json();
@@ -286,7 +349,7 @@ async function salvarStatusSupabase(id, status, enviadaEm) {
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/sugestoes?id=eq.${id}`, {
       method: 'PATCH',
-      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      headers: sbHeaders({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
       body: JSON.stringify({ status, enviada_em: enviadaEm })
     });
   } catch (e) {
@@ -298,7 +361,7 @@ async function salvarEdicaoSupabase(id, textoEditado) {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
   await fetch(`${SUPABASE_URL}/rest/v1/sugestoes?id=eq.${id}`, {
     method: 'PATCH',
-    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    headers: sbHeaders({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
     body: JSON.stringify({ sugestao_resposta: textoEditado })
   });
 }
@@ -708,7 +771,7 @@ async function carregarInativos() {
     let contatos = [];
     if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       const r = await fetch(`${SUPABASE_URL}/rest/v1/contacts?last_message_at=lt.${isoLimite}&order=last_message_at.asc`, {
-        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+        headers: sbHeaders()
       });
       contatos = r.ok ? await r.json() : [];
     } else {
@@ -747,12 +810,12 @@ async function carregarMedidor() {
     let contatos = [];
     if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       const r = await fetch(`${SUPABASE_URL}/rest/v1/contacts?order=last_message_at.desc&limit=20`, {
-        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+        headers: sbHeaders()
       });
       const raw = r.ok ? await r.json() : [];
       // buscar contagem de mensagens por número
       const r2 = await fetch(`${SUPABASE_URL}/rest/v1/messages?select=whatsapp_number&direction=eq.incoming`, {
-        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+        headers: sbHeaders()
       });
       const msgs = r2.ok ? await r2.json() : [];
       const contagem = {};
@@ -795,7 +858,7 @@ async function carregarRelatorio() {
     if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       const hoje = new Date().toISOString().slice(0, 10);
       const r = await fetch(`${SUPABASE_URL}/rest/v1/relatorios_diarios?data=eq.${hoje}&order=criado_em.desc&limit=1`, {
-        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+        headers: sbHeaders()
       });
       const arr = r.ok ? await r.json() : [];
       d = arr[0] || null;
@@ -922,7 +985,7 @@ async function recarregarFila() {
   }
 }
 
-(async function start() {
+async function iniciarApp() {
   try {
     SUGESTOES = await carregarSugestoes();
   } catch (e) {
@@ -941,6 +1004,74 @@ async function recarregarFila() {
   // Mantém a fila viva: atualiza a cada 60s e ao voltar para a aba do navegador
   setInterval(recarregarFila, 60000);
   window.addEventListener('focus', recarregarFila);
+}
+
+// ============================================================
+//  CONTROLE DE LOGIN
+//  Sem o SDK do Supabase (modo demonstração/testes): roda direto, sem login.
+//  Com o SDK: exige login e mostra só as mensagens do WhatsApp do atendente.
+// ============================================================
+function mostrarLogin() { document.getElementById('tela-login').classList.add('show'); document.getElementById('login-email').focus(); }
+function esconderLogin() { document.getElementById('tela-login').classList.remove('show'); }
+
+function marcarSessao(email) {
+  const s = document.getElementById('sessao');
+  if (s) { s.style.display = ''; document.getElementById('sessao-quem').textContent = email || ''; }
+}
+
+async function fazerLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('login-btn');
+  const erro = document.getElementById('login-erro');
+  erro.classList.remove('show');
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try {
+    const { data, error } = await sbClient.auth.signInWithPassword({ email, password: senha });
+    if (error || !data.session) {
+      erro.textContent = 'E-mail ou senha incorretos. Confira com o administrador.';
+      erro.classList.add('show');
+      return;
+    }
+    sessaoToken = data.session.access_token;
+    esconderLogin();
+    marcarSessao(data.session.user.email);
+    await iniciarApp();
+  } catch (err) {
+    console.error('Falha no login:', err);
+    erro.textContent = 'Não foi possível entrar agora. Tente de novo em instantes.';
+    erro.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Entrar';
+  }
+}
+
+async function sair() {
+  if (!confirmarDescarte()) return;
+  try { if (sbClient) await sbClient.auth.signOut(); } catch (e) {}
+  location.reload();
+}
+
+(async function boot() {
+  // Sem login configurado (modo demonstração / testes): comporta-se como antes.
+  if (!sbClient) { iniciarApp(); return; }
+  // Já existe sessão salva neste navegador? Entra direto.
+  try {
+    const { data } = await sbClient.auth.getSession();
+    if (data.session) {
+      sessaoToken = data.session.access_token;
+      marcarSessao(data.session.user.email);
+      const carregando = document.getElementById('carregando');
+      if (carregando) carregando.style.display = 'none';
+      await iniciarApp();
+      return;
+    }
+  } catch (e) { console.error('Erro ao checar sessão:', e); }
+  // Sem sessão: esconde o "carregando" e pede login.
+  const carregando = document.getElementById('carregando');
+  if (carregando) carregando.style.display = 'none';
+  mostrarLogin();
 })();
 </script>
 </body>
