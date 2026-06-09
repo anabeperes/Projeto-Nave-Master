@@ -268,10 +268,6 @@
               "value": "={{ $('Configurar Supabase 18h').item.json.supabase_anon_key }}"
             },
             {
-              "name": "Authorization",
-              "value": "=Bearer {{ $('Configurar Supabase 18h').item.json.supabase_anon_key }}"
-            },
-            {
               "name": "Prefer",
               "value": "return=minimal"
             }
@@ -419,10 +415,6 @@
             {
               "name": "apikey",
               "value": "={{ $('Configurar Supabase').item.json.supabase_anon_key }}"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $('Configurar Supabase').item.json.supabase_anon_key }}"
             },
             {
               "name": "Prefer",
@@ -776,10 +768,6 @@
             {
               "name": "apikey",
               "value": "={{ $('Configurar Supabase').item.json.supabase_anon_key }}"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $('Configurar Supabase').item.json.supabase_anon_key }}"
             }
           ]
         },
