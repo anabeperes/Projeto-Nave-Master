@@ -763,6 +763,60 @@
         1600,
         -320
       ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Configurar Supabase').item.json.supabase_url }}/rest/v1/sugestoes?status=eq.pendente&select=whatsapp_number",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $('Configurar Supabase').item.json.supabase_anon_key }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Configurar Supabase').item.json.supabase_anon_key }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "c94cec55-9458-4ebf-87f4-d8d5eab78c67",
+      "name": "Buscar Sugestoes Pendentes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1312,
+        176
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "WzvsFBC0LqoLdf0n",
+          "name": "Header Auth account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pula conversas que já têm uma sugestão PENDENTE no painel,\n// pra não reenviar pra IA e economizar API.\nconst conversas = $('Buscar Conversas Nao Lidas').all();\nconst pendentes = $('Buscar Sugestoes Pendentes').all();\n\nconst jaPendentes = new Set();\nfor (const item of pendentes) {\n  const j = item.json;\n  if (Array.isArray(j)) {\n    j.forEach(x => { if (x && x.whatsapp_number) jaPendentes.add(String(x.whatsapp_number)); });\n  } else if (j && j.whatsapp_number) {\n    jaPendentes.add(String(j.whatsapp_number));\n  }\n}\n\n// Mantém só quem ainda NÃO tem sugestão pendente\nconst novas = conversas.filter(c => !jaPendentes.has(String(c.json.whatsapp_number)));\nreturn novas;\n"
+      },
+      "id": "b9e21d36-56ba-45ac-a379-8dbd7af5f9a4",
+      "name": "Filtrar Ja Sugeridas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        176
+      ]
     }
   ],
   "pinData": {},
@@ -917,7 +971,7 @@
       "main": [
         [
           {
-            "node": "Tem conversas?",
+            "node": "Buscar Sugestoes Pendentes",
             "type": "main",
             "index": 0
           }
@@ -1039,6 +1093,28 @@
         [
           {
             "node": "Buscar Stats do Dia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Sugestoes Pendentes": {
+      "main": [
+        [
+          {
+            "node": "Filtrar Ja Sugeridas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar Ja Sugeridas": {
+      "main": [
+        [
+          {
+            "node": "Tem conversas?",
             "type": "main",
             "index": 0
           }
