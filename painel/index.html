@@ -233,6 +233,10 @@
     <span class="material-symbols-rounded">info</span>
     Modo demonstração: dados de exemplo. As edições e os aprendizados ficam salvos no seu navegador. Depois, basta apontar para o Supabase.
   </div>
+  <div class="mock-aviso" id="erro-aviso" style="display:none; background:var(--red-bg); border-color:var(--red-bd); color:var(--red);">
+    <span class="material-symbols-rounded">error</span>
+    <span id="erro-aviso-txt"></span>
+  </div>
 </header>
 
 <nav class="nav-abas">
@@ -320,6 +324,7 @@ function sbHeaders(extra) {
 //  Se não, usa dados de demonstração (MOCK).
 // ============================================================
 let usandoMock = false;
+let erroCarregamento = null; // quando logado e a busca falha (erro real, não fila vazia)
 
 async function carregarSugestoes() {
   if (SUPABASE_URL && SUPABASE_ANON_KEY) {
@@ -327,13 +332,21 @@ async function carregarSugestoes() {
       const r = await fetch(`${SUPABASE_URL}/rest/v1/sugestoes?order=criada_em.asc`, {
         headers: sbHeaders()
       });
-      if (!r.ok) { console.error('Erro ao buscar sugestões do Supabase:', r.status); usandoMock = true; return MOCK; }
+      if (!r.ok) {
+        console.error('Erro ao buscar sugestões do Supabase:', r.status);
+        // Logado de verdade: NÃO mostra dados de exemplo. Sinaliza o erro real.
+        if (sessaoToken) { erroCarregamento = 'Erro ' + r.status + ' ao carregar suas mensagens.'; return []; }
+        usandoMock = true; return MOCK;
+      }
+      erroCarregamento = null;
       const dados = await r.json();
-      // Se o banco ainda não tem sugestões, cai no modo demonstração
-      if (!Array.isArray(dados) || dados.length === 0) { usandoMock = true; return MOCK; }
+      if (!Array.isArray(dados)) { if (sessaoToken) return []; usandoMock = true; return MOCK; }
+      // Logado: fila vazia é um estado válido (ainda não chegou mensagem), não é demonstração.
+      if (dados.length === 0 && !sessaoToken) { usandoMock = true; return MOCK; }
       return dados;
     } catch (e) {
-      console.error('Falha de rede ao buscar do Supabase, usando dados de demonstração:', e);
+      console.error('Falha de rede ao buscar do Supabase:', e);
+      if (sessaoToken) { erroCarregamento = 'Falha de rede ao carregar suas mensagens.'; return []; }
       usandoMock = true;
       return MOCK;
     }
@@ -968,14 +981,25 @@ function aplicarPersistencia(lista) {
 // Recarrega a fila da fonte de dados sem atrapalhar uma edição em andamento.
 // Mantém a fila atualizada com mensagens novas que chegam pelo WhatsApp.
 let recarregando = false;
+// Mostra o aviso de demonstração OU o aviso de erro (logado e a busca falhou).
+function atualizarAvisos() {
+  const mock = document.getElementById('mock-aviso');
+  const erro = document.getElementById('erro-aviso');
+  const erroTxt = document.getElementById('erro-aviso-txt');
+  if (mock) mock.style.display = usandoMock ? '' : 'none';
+  if (erro) {
+    if (erroCarregamento) { if (erroTxt) erroTxt.textContent = erroCarregamento; erro.style.display = ''; }
+    else { erro.style.display = 'none'; }
+  }
+}
+
 async function recarregarFila() {
   if (editandoId || recarregando) return;
   recarregando = true;
   try {
     const novas = await carregarSugestoes();
     SUGESTOES = aplicarPersistencia(novas);
-    const aviso = document.getElementById('mock-aviso');
-    if (aviso) aviso.style.display = usandoMock ? '' : 'none';
+    atualizarAvisos();
     render();
   } catch (e) {
     console.error('Falha ao recarregar a fila (mantendo a atual):', e);
@@ -994,8 +1018,7 @@ async function iniciarApp() {
   }
   aplicarPersistencia(SUGESTOES);
   // Só esconde o aviso de demonstração quando os dados vieram mesmo do Supabase
-  const aviso = document.getElementById('mock-aviso');
-  if (aviso) aviso.style.display = usandoMock ? '' : 'none';
+  atualizarAvisos();
   const carregando = document.getElementById('carregando');
   if (carregando) carregando.style.display = 'none';
   render();
