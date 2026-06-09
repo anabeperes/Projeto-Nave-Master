@@ -53,6 +53,9 @@
   .pend-wrap { position: relative; }
   .stat.clicavel { cursor: pointer; user-select: none; transition: border-color .15s, background .15s; }
   .stat.clicavel:hover { border-color: hsl(var(--primary) / 0.6); background: hsl(84 60% 92% / 0.5); }
+  .stat-acao { display: inline-flex; align-items: center; gap: 6px; background: hsl(var(--primary)); border: 1px solid hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: filter .15s; }
+  .stat-acao:hover { filter: brightness(0.96); }
+  .stat-acao .material-symbols-rounded { font-size: 16px; }
   .stat.clicavel .material-symbols-rounded { font-size: 15px; vertical-align: -3px; margin-left: 1px; color: var(--text-muted); }
   .pend-pop { position: absolute; top: calc(100% + 8px); left: 0; z-index: 30; min-width: 240px; max-height: 320px; overflow-y: auto; background: hsl(var(--card)); border: 1px solid hsl(var(--palette-border)); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); padding: 6px; display: none; }
   .pend-pop.show { display: block; }
@@ -177,6 +180,9 @@
     <div class="stat alta">Alta <b id="st-alta">0</b></div>
     <div class="stat media">Média <b id="st-media">0</b></div>
     <div class="stat baixa">Baixa <b id="st-baixa">0</b></div>
+    <button class="stat-acao" id="btn-marcar-todas" onclick="marcarTodasEnviadas()" style="display:none">
+      <span class="material-symbols-rounded">done_all</span>Marcar todas como enviadas
+    </button>
     <div class="filtros">
       <input class="busca" id="busca" placeholder="Buscar por nome...">
       <span class="chip ativo" data-f="todas">Todas</span>
@@ -444,6 +450,16 @@ function render() {
   lista.innerHTML = html;
   if (editandoId) { const t = document.getElementById("edit-" + editandoId); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } }
   atualizarStats();
+  atualizarBotaoMarcarTodas();
+}
+
+// Mostra o botão "Marcar todas como enviadas" só quando há pendentes à vista
+function atualizarBotaoMarcarTodas() {
+  const btn = document.getElementById("btn-marcar-todas");
+  if (!btn) return;
+  const haPendentesVisiveis = abaAtual === "sugestoes" && filtroAtual !== "RESPONDIDAS"
+    && SUGESTOES.some(s => s.status !== "enviada" && passaFiltros(s));
+  btn.style.display = haPendentesVisiveis ? "" : "none";
 }
 
 function atualizarStats() {
@@ -508,6 +524,26 @@ function alternarEnviada(id) {
   salvarStatusSupabase(id, s.status, s.enviada_em);
 
   render();
+}
+
+// Marca de uma vez todas as pendentes que estão à vista (respeita busca e filtro)
+function marcarTodasEnviadas() {
+  const alvos = SUGESTOES.filter(s => s.status !== "enviada" && passaFiltros(s));
+  if (!alvos.length) { mostrarToast("Nenhuma pendente para marcar"); return; }
+  if (!confirm(`Marcar ${alvos.length} mensagem(ns) como enviada(s)?`)) return;
+
+  const statusSalvos = lerStatus();
+  const agora = new Date().toISOString();
+  alvos.forEach(s => {
+    s.status = "enviada";
+    s.enviada_em = agora;
+    statusSalvos[s.id] = { status: "enviada", enviada_em: agora };
+    salvarStatusSupabase(s.id, "enviada", agora);
+  });
+  salvarStatus(statusSalvos);
+
+  render();
+  mostrarToast(`${alvos.length} marcada(s) como enviada(s)`);
 }
 
 // Lista de mentorados pendentes (contador "Pendentes" clicável)
@@ -575,6 +611,7 @@ function trocarAba(aba) {
   document.getElementById('painel-relatorio').style.display = aba === 'relatorio' ? '' : 'none';
   if (aba === 'analytics') carregarAnalytics();
   if (aba === 'relatorio') carregarRelatorio();
+  atualizarBotaoMarcarTodas();
 }
 
 // ============================================================

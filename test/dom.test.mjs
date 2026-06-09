@@ -38,11 +38,13 @@ async function carregarPainel(localStorageCompartilhado) {
       });
       // Sem rede: responde como o Supabase bloqueado (403) → painel cai no MOCK
       window.fetch = () => Promise.resolve({ ok: false, status: 403, json: async () => [] });
+      // Confirmações de diálogo sempre aceitas nos testes
+      window.confirm = () => true;
     },
   });
   const { document } = dom.window;
-  // Espera o start() assíncrono renderizar os cards
-  await aguardar(() => document.querySelectorAll('#lista .card').length > 0, dom.window);
+  // Espera o start() assíncrono terminar de renderizar (cards OU mensagem de "vazio")
+  await aguardar(() => document.querySelector('#lista')?.childElementCount > 0, dom.window);
   return dom;
 }
 
@@ -130,5 +132,44 @@ test('contador de pendentes reflete o status persistido após recarregar', async
   dom = await carregarPainel(ls);
   doc = dom.window.document;
   assert.equal(doc.getElementById('st-pend').textContent, '3', 'contador deveria seguir 3 após recarregar');
+  dom.window.close();
+});
+
+test('botão "Marcar todas como enviadas" zera as pendentes e PERSISTE após recarregar', async () => {
+  const ls = criarLocalStorageCompartilhado();
+  let dom = await carregarPainel(ls);
+  let doc = dom.window.document;
+
+  // começa com 4 pendentes e o botão visível
+  assert.equal(doc.getElementById('st-pend').textContent, '4', 'deveria começar com 4 pendentes');
+  const btn = doc.getElementById('btn-marcar-todas');
+  assert.ok(btn && btn.style.display !== 'none', 'botão deveria estar visível com pendentes');
+
+  // clica em marcar todas
+  btn.click();
+  assert.equal(doc.getElementById('st-pend').textContent, '0', 'todas deveriam virar enviadas');
+  assert.equal(doc.querySelectorAll('#lista .card').length, 0, 'nenhum card pendente deveria sobrar');
+  assert.equal(doc.getElementById('btn-marcar-todas').style.display, 'none', 'botão deveria sumir sem pendentes');
+  dom.window.close();
+
+  // RELOAD — continua tudo enviado
+  dom = await carregarPainel(ls);
+  doc = dom.window.document;
+  assert.equal(doc.getElementById('st-pend').textContent, '0', 'deveria seguir 0 pendentes após recarregar');
+  dom.window.close();
+});
+
+test('marcar todas respeita o filtro de urgência (só marca o que está à vista)', async () => {
+  const ls = criarLocalStorageCompartilhado();
+  let dom = await carregarPainel(ls);
+  let doc = dom.window.document;
+
+  // filtra só ALTA — MOCK tem 1 pendente ALTA (id 3)
+  dom.window.setTab('ALTA');
+  assert.equal(doc.querySelectorAll('#lista .card').length, 1, 'deveria haver 1 pendente ALTA');
+
+  doc.getElementById('btn-marcar-todas').click();
+  // marcou só a ALTA; sobram 3 pendentes (as MEDIA/BAIXA)
+  assert.equal(doc.getElementById('st-pend').textContent, '3', 'só a ALTA deveria ter sido marcada');
   dom.window.close();
 });
