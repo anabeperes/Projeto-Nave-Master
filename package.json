@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.mjs",
     "serve": "node server.mjs",
-    "test": "node --test test/smoke.mjs test/dom.test.mjs"
+    "test": "node --test test/smoke.mjs test/dom.test.mjs",
+    "test:e2e": "node --test test/e2e.playwright.mjs"
   },
   "keywords": [],
   "author": "",
