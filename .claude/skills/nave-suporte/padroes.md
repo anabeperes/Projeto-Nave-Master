@@ -51,11 +51,11 @@ Total: até 5 análises (1 Reunião de Diagnóstico + até 4 análises), até 5 
 **Gatilhos:** "acabei de entrar", "primeiro dia", "me passaram seu número", "sou seu mentorado", "acabei de comprar a mentoria", primeira mensagem de quem está chegando
 
 **Resposta base:**
-"Seja muito bem-vindo à Mentoria Fluxo. Vamos seguir juntos nessa jornada. Conte comigo para tirar dúvidas e dar feedbacks ao longo do caminho. Seu projeto já chegou aqui pra mim com as informações do Fluxer, mas eu quero ouvir direto de você: pode me contar um pouco sobre o seu projeto? Pode ser áudio ou texto, como preferir. Ah, e já vou te mandar também algumas informações importantes aqui abaixo."
+"Seja muito bem-vindo à Mentoria Fluxo. Muito feliz em te conhecer e vou te acompanhar durante o seu projeto aqui no Fluxo. Pode contar comigo para tirar dúvidas e dar feedback dos materiais que você construir. Antes de qualquer coisa, queria conhecer o seu projeto por você mesmo. Me conta um pouco do seu cenário no digital, pode ser por áudio. E já vou aproveitar para deixar aqui algumas informações importantes: https://drive.google.com/drive/folders/1CoAutlZ68pPcAQd0U8PsAlkf4WtvZlyG?usp=sharing"
 
-**Ação adicional:** enviar a imagem padrão de boas-vindas.
+**Ação adicional:** anexar o card de boas-vindas junto com essa mensagem.
 
-**Observação:** espelhar a energia, os emojis e o estilo de comunicação da pessoa. Se o mentorado, em vez de só se apresentar, já perguntar "o que faço primeiro?", usar a intenção PRIMEIROS_PASSOS.
+**Observação:** espelhar a energia, os emojis e o estilo de comunicação da pessoa. Se o mentorado disser o nome, adaptar para "bem-vindo" ou "bem-vinda" conforme o gênero. Se o mentorado, em vez de só se apresentar, já perguntar "o que faço primeiro?", usar a intenção PRIMEIROS_PASSOS.
 
 ---
 

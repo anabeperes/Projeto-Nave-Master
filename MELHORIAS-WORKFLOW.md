@@ -56,13 +56,60 @@ podia cumprimentar de novo ou reexplicar algo já dito.
 
 ---
 
-## ⏳ Incremento 2 — Suporte completo + Eventos (PRÓXIMO)
+## ✅ Incremento 2 — Suporte em dois passos + skills + voz (FEITO)
 
-- Portar as skills de suporte que já existem no repo (`cancelamento`,
-  `congelamento`, `reclamacao`, `padroes`) para o nó de Suporte — hoje o
-  workflow só tem 8 intenções fixas embutidas.
-- Adicionar a categoria **EVENTOS** (e dúvidas sobre entregas/metodologia) ao
-  Roteador, hoje limitado a SUPORTE/TRÁFEGO/COPY/FEEDBACK.
+**Problema que resolvia:** o nó de SUPORTE tinha só 8 intenções fixas embutidas.
+As skills ricas do repo (cancelamento, congelamento, reclamação, financeiro,
+fluxer, análise/plano, padrões, fluxo criativo) ficavam de fora, e dúvidas de
+eventos/entregas caíam no improviso. Tráfego/copy seguem para o Incremento 4.
+
+**O que mudou:**
+
+1. **Roteador escolhe a skill primeiro.** Quando classifica SUPORTE, ele também
+   define o **sub-tipo** (PADROES, FLUXER, ANALISE, FINANCEIRO, SENSIVEL,
+   FLUXO_CRIATIVO, RELACIONAMENTO). Sem nós novos: a classificação dupla acontece
+   na mesma chamada (Haiku), com `max_tokens` ajustado.
+2. **Especialista usa só o material do sub-tipo.** Para SUPORTE, o system prompt
+   passa a ser a skill daquele tema (lida de `.claude/skills/nave-suporte/`).
+   O caso **SENSIVEL** recebe cancelamento + congelamento + reclamação juntos,
+   porque se interligam (ex.: cancelar por saúde vira congelamento).
+3. **Eventos cobertos sem categoria nova.** Logística de eventos/retiros está em
+   `padroes`; o evento de IA (Fluxo Criativo) tem skill própria.
+4. **Nova skill `relacionamento`.** Mentorado que voltou, comemoração, desânimo,
+   mudar de nicho, extensão de prazo, indicação de ferramenta e bônus.
+5. **Regras de Comunicação no Redator.** Proíbe travessão e hífen duplo, listas
+   com marcadores (prosa no WhatsApp, exceto FEEDBACK), jargão de IA; reforça a
+   voz de parceira brasileira e o uso natural de emoji.
+
+**Como aplicar:** importe o `Workflow dash.json` atualizado no n8n. Nenhuma
+migração de banco é necessária neste incremento.
+
+> A separação por sub-tipo é uma classificação a mais do Haiku, então não há nós
+> novos nem reconexões (mais seguro, já que não dá para testar n8n daqui).
+
+## ✅ Incremento 2.5 — Fluxos de COPY, TRÁFEGO e FEEDBACK (FEITO)
+
+**Problema que resolvia:** as três categorias respondiam fora do fluxo real da
+navegadora. FEEDBACK gerava uma crítica VTSD na hora (quem revisa é o time de
+copy, em até 4 dias úteis), e avisos de "vou criar minha página" ou "vou subir
+campanha" caíam em resposta de metodologia em vez de incentivo.
+
+**O que mudou:**
+
+1. **FEEDBACK vira intake.** Recebe o pedido, identifica o material (PV, anúncio,
+   quiz cobertos; e-book/curso/produto não cobertos) e monta a mensagem de
+   encaminhamento ao time de copy com prazo de 4 dias úteis. A crítica VTSD
+   detalhada segue documentada em `.claude/skills/nave-especialista-feedback/`.
+2. **COPY e TRÁFEGO leem o momento.** `VAI_FAZER` parabeniza e incentiva a
+   execução; `JA_FEZ` em copy encaminha para o time, em tráfego pede a campanha
+   exportada do gerenciador (perguntando se sabe baixar); `DUVIDA` responde o
+   conceito direto.
+3. **Roteador** ganhou uma nota: avisos de que ainda vai fazer algo vão para
+   COPY/TRÁFEGO, não FEEDBACK.
+
+Os prompts viraram fonte de verdade nos agentes canônicos
+(`.claude/agents/nave-especialista-copy.md`, `-trafego.md`, `-feedback.md`) e o
+script os lê de lá. Sem nós novos.
 
 ## ⏳ Incremento 3 — Qualidade e atualização
 
@@ -84,3 +131,5 @@ podia cumprimentar de novo ou reexplicar algo já dito.
 | Script | O que faz |
 |---|---|
 | `scripts/upgrade-workflow-ctx.mjs` | Aplica o Incremento 1 ao `Workflow dash.json` (determinístico, valida cada passo e a sintaxe de cada nó). |
+| `scripts/upgrade-workflow-suporte.mjs` | Aplica o Incremento 2: sub-tipo de SUPORTE no Roteador, seleção da skill no Especialista (lê as skills de `.claude/skills/nave-suporte/`) e Regras de Comunicação no Redator. Idempotente, valida sintaxe + JSON. |
+| `scripts/upgrade-workflow-fluxos.mjs` | Aplica o Incremento 2.5: FEEDBACK vira intake e COPY/TRÁFEGO passam a ler o momento (lê os prompts de `.claude/agents/`). Rode depois do de suporte. Idempotente, valida sintaxe + JSON. |

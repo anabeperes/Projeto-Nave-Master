@@ -160,6 +160,17 @@ Depois do cadastro, o Fluxer pede para completar o perfil pessoal (RG, data de n
 
 ---
 
+### 14. PLATAFORMA_FORA_DO_AR / LINK_NAO_CARREGA
+
+**Gatilhos:** "o Fluxer não está abrindo", "a plataforma está fora do ar", "o Fluxer deu erro", "o link da aula não abre", "cliquei na tarefa e não carrega", "o módulo não abre"
+
+**Resposta base:**
+"Me manda um vídeo curto mostrando o que está acontecendo, assim eu encaminho certinho para o time técnico. Enquanto isso, tenta dois caminhos que costumam resolver na hora: dá um Ctrl+Shift+R na página para recarregar do zero, ou abre o Fluxer numa aba anônima do navegador."
+
+**Ação adicional:** se o problema continuar depois de o mentorado tentar, encaminhar o vídeo para o time técnico.
+
+---
+
 ## Formato de resposta obrigatório
 
 ```

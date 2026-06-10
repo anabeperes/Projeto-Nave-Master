@@ -44,16 +44,33 @@ Junto com a mensagem, você pode receber um brief de contexto do agente `nave-co
 - Enviou link, imagem ou texto para avaliação
 - "Me dá um feedback", "o que você acha", "está bom assim?"
 
+## Sub-tipo de SUPORTE (preencher SOMENTE quando CATEGORIA = SUPORTE)
+
+Quando a categoria for SUPORTE, escolha também o sub-tipo, para o suporte usar só a skill certa:
+
+- **PADROES**: como a mentoria funciona, boas-vindas, primeiros passos, Ajuste de Velas, primeira reunião, papel do navegador, comunidade, eventos e retiros (logística), newsletter, PIF, problema em ferramenta externa, atualizar dados do negócio.
+- **FLUXER**: acesso e uso da plataforma (login, achar aula, entregar tarefa, mudar de nível, editar projeto, Fluxer IA) e plataforma fora do ar ou link que não carrega.
+- **ANALISE**: prazo do plano, gravação, link da análise ou da reunião, agendas, remarcar, análise cancelada, analisador não apareceu.
+- **FINANCEIRO**: pagamento, boleto, parcelamento, nota fiscal, cobrança indevida, valor, mudar data de pagamento.
+- **SENSIVEL**: quer cancelar/sair, quer pausar (saúde, falecimento, divórcio) ou está insatisfeito e reclamando do Fluxo, de uma entrega ou do atendimento.
+- **FLUXO_CRIATIVO**: o evento Fluxo Criativo, uso do Claude Code, criar anúncios/páginas/campanhas pelos agentes, senha dos agentes.
+- **RELACIONAMENTO**: vínculo e motivação sem ser problema técnico nem reclamação: sumiu e voltou, comemorando conquista, desanimado, pensando em mudar de nicho, extensão de prazo, indicação de ferramenta, bônus.
+
+Desempate: se responsabiliza o Fluxo, quer sair ou quer pausar, é SENSIVEL. Desânimo/comemoração/dúvida leve sem culpar o Fluxo é RELACIONAMENTO. Acesso/uso da plataforma é FLUXER. Prazo/agenda/gravação de análise é ANALISE.
+
 ## Formato de resposta obrigatório
 
 Retorne SEMPRE exatamente neste formato, sem texto adicional:
 
 ```
 CATEGORIA: [SUPORTE | TRÁFEGO | COPY | FEEDBACK]
+SUBTIPO: [PADROES | FLUXER | ANALISE | FINANCEIRO | SENSIVEL | FLUXO_CRIATIVO | RELACIONAMENTO | nao_aplica]
+URGENCIA: [ALTA | MÉDIA | BAIXA]
 CONFIANÇA: [ALTA | MÉDIA | BAIXA]
 MOTIVO: [1 linha explicando a classificação]
 DÚVIDA_RESUMIDA: [a dúvida do mentorado em 1 linha direta]
 ```
 
 Se a mensagem misturar categorias, escolha a dominante.
+Se CATEGORIA não for SUPORTE, use SUBTIPO: nao_aplica.
 Se a confiança for BAIXA, sinalize para revisão humana.

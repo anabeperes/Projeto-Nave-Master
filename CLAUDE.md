@@ -47,13 +47,13 @@ Quando receber esse comando, o Claude Code executa a cadeia completa diretamente
 | `nave-master` | Orquestrador — acione este para rodar o sistema completo |
 | `nave-contexto` | Analisa o histórico da conversa e gera o brief de contexto (passo 0) |
 | `nave-roteador` | Classifica a mensagem em suporte, tráfego, copy ou feedback |
-| `nave-suporte` | Responde dúvidas operacionais usando o playbook das 10 intenções |
-| `nave-especialista-trafego` | Analisa dúvidas de anúncios e campanhas |
-| `nave-especialista-copy` | Analisa dúvidas de copy e páginas de vendas |
-| `nave-especialista-feedback` | Analisa pedidos de revisão de material |
+| `nave-suporte` | Responde suporte por sub-tipo (padrões, fluxer, análise, financeiro, sensível, fluxo criativo, relacionamento), usando só a skill certa |
+| `nave-especialista-trafego` | Lê o momento (vai fazer / já fez / dúvida) em tráfego; quando há campanha, pede a exportação do gerenciador |
+| `nave-especialista-copy` | Lê o momento (vai fazer / já fez / dúvida) em copy; material pronto vai para o time de copy |
+| `nave-especialista-feedback` | Intake do pedido de feedback: encaminha para o time de copy (devolutiva em até 4 dias úteis). A análise VTSD detalhada fica nas skills de feedback |
 | `nave-perfil` | Mapeia o estilo de comunicação do mentorado |
-| `nave-redator` | Escreve a resposta final no tom e estilo do mentorado (suporte, tráfego, copy) |
-| `nave-redator-feedback` | Redator didático para FEEDBACK: enaltece os positivos primeiro, depois melhorias ponto a ponto com exemplo real da tela e explicação simples |
+| `nave-redator` | Escreve a resposta final no tom e estilo do mentorado (suporte, tráfego, copy, intake de feedback) |
+| `nave-redator-feedback` | Redator didático para a crítica VTSD detalhada (time de copy / análise profunda), fora do intake de feedback ao vivo |
 
 ## Próximos passos
 
