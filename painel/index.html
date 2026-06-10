@@ -201,8 +201,8 @@
     <span class="brand-dot"><span class="material-symbols-rounded">forum</span></span>
     <h1>Painel da Navegadora</h1>
     <span class="sub">Mentoria Fluxo · sugestões de resposta para o WhatsApp</span>
-    <button class="link-aprendizado" id="btn-aprendizado" onclick="copiarAprendizado()" title="Copiar as respostas que o CS editou, cada uma com a mensagem do mentorado que deu origem a ela">
-      <span class="material-symbols-rounded">school</span><span id="aprendizado-count">0</span> aprendizados
+    <button class="link-aprendizado" id="btn-aprendizado" onclick="copiarAprendizado()" title="Copiar as respostas que o CS editou hoje, cada uma com a mensagem do mentorado que deu origem a ela. Envie ao fim do dia de atendimento.">
+      <span class="material-symbols-rounded">school</span><span id="aprendizado-count">0</span> aprendizados de hoje
     </button>
     <span class="sessao" id="sessao" style="display:none">
       <span class="quem">WhatsApp: <b id="sessao-quem"></b></span>
@@ -436,6 +436,12 @@ function lerEdicoes() { try { return JSON.parse(localStorage.getItem(KEY_EDICOES
 function salvarEdicoes(obj) { localStorage.setItem(KEY_EDICOES, JSON.stringify(obj)); }
 function lerCorrecoes() { try { return JSON.parse(localStorage.getItem(KEY_CORRECOES) || "[]"); } catch (e) { return []; } }
 function salvarCorrecoes(arr) { localStorage.setItem(KEY_CORRECOES, JSON.stringify(arr)); }
+// Só os aprendizados feitos hoje — cada CS envia os do próprio dia ao fim do atendimento.
+// Compara pelo dia do calendário (horário local), ignorando o horário.
+function correcoesDeHoje() {
+  const hoje = new Date().toDateString();
+  return lerCorrecoes().filter(c => c.em && new Date(c.em).toDateString() === hoje);
+}
 // Status de cada sugestão (respondida / reaberta) — persiste entre recarregamentos da página
 function lerStatus() { try { return JSON.parse(localStorage.getItem(KEY_STATUS) || "{}"); } catch (e) { return {}; } }
 function salvarStatus(obj) { localStorage.setItem(KEY_STATUS, JSON.stringify(obj)); }
@@ -555,7 +561,7 @@ function atualizarStats() {
   document.getElementById("st-alta").textContent = pend.filter(s => s.urgencia === "ALTA").length;
   document.getElementById("st-media").textContent = pend.filter(s => s.urgencia === "MEDIA").length;
   document.getElementById("st-baixa").textContent = pend.filter(s => s.urgencia === "BAIXA").length;
-  document.getElementById("aprendizado-count").textContent = lerCorrecoes().length;
+  document.getElementById("aprendizado-count").textContent = correcoesDeHoje().length;
 }
 
 // ============================================================
@@ -716,27 +722,29 @@ function setTab(f) {
   render();
 }
 
-// "Aprendizados": copia (para a área de transferência) todas as respostas que o
-// CS editou, cada uma junto com a mensagem do mentorado que deu origem a ela.
-// Antes isso baixava um JSON; agora entrega um texto pronto para colar.
+// "Aprendizados": copia (para a área de transferência) as respostas que o CS
+// editou HOJE, cada uma junto com a mensagem do mentorado que deu origem a ela.
+// É só do dia atual — cada CS envia os seus ao fim do dia de atendimento.
 function copiarAprendizado() {
-  const correcoes = lerCorrecoes();
-  if (!correcoes.length) { mostrarToast("Nenhuma edição aprendida ainda"); return; }
+  const correcoes = correcoesDeHoje();
+  if (!correcoes.length) { mostrarToast("Nenhuma edição aprendida hoje"); return; }
 
-  // Uma entrada por sugestão: se a mesma resposta foi editada mais de uma vez,
-  // vale a edição mais recente (a última gravada para aquele id).
+  // Uma entrada por sugestão: se a mesma resposta foi editada mais de uma vez
+  // hoje, vale a edição mais recente (a última gravada para aquele id).
   const porId = new Map();
   correcoes.forEach(c => porId.set(c.id, c));
   const itens = Array.from(porId.values());
 
-  const texto = itens.map((c, i) => [
+  const dia = new Date().toLocaleDateString('pt-BR');
+  const cabecalho = `Aprendizados de ${dia} (${itens.length})`;
+  const corpo = itens.map((c, i) => [
     `${i + 1}. ${c.mentorado || "Mentorado"}`,
     `Mensagem do mentorado:\n${(c.mensagem || "").trim()}`,
     `Resposta do CS:\n${(c.editado || "").trim()}`
   ].join("\n\n")).join("\n\n———\n\n");
 
-  navigator.clipboard.writeText(texto)
-    .then(() => mostrarToast(itens.length + " aprendizado(s) copiado(s)"))
+  navigator.clipboard.writeText(cabecalho + "\n\n" + corpo)
+    .then(() => mostrarToast(itens.length + " aprendizado(s) de hoje copiado(s)"))
     .catch(() => mostrarToast("Não foi possível copiar"));
 }
 
