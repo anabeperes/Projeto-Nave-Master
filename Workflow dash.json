@@ -308,13 +308,13 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "0 9-17/2 * * 1-5"
+              "expression": "0 8-17 * * 1-5"
             }
           ]
         }
       },
       "id": "b00302cb-a681-4c78-b0cb-d83585abc91f",
-      "name": "Agendamento (seg-sex 9-17h BRT)",
+      "name": "Agendamento (seg-sex 8-17h BRT)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
@@ -1204,7 +1204,7 @@
         ]
       ]
     },
-    "Agendamento (seg-sex 9-17h BRT)": {
+    "Agendamento (seg-sex 8-17h BRT)": {
       "main": [
         [
           {
