@@ -70,7 +70,7 @@ Próximo plano de ação é liberado no Fluxer (em até 7 dias úteis)
 **Gatilhos:** "cadê o link da análise?", "como acesso a reunião?", "onde fica o acesso para a análise?", "não achei o link da chamada", "como entro na análise?"
 
 **Resposta base:**
-"O acesso à análise fica dentro do Fluxer, na página do seu plano de ação. Quando a análise está agendada, aparece um card com a data, o horário e o botão Acessar chamada. No dia da análise, o botão fica ativo e você clica direto por lá para entrar. Não tem link enviado por e-mail ou WhatsApp — fica tudo dentro do Fluxer mesmo."
+"O acesso à análise fica dentro do Fluxer, na página do seu plano de ação. Quando a análise está agendada, aparece um card com a data, o horário e o botão Acessar chamada. No dia da análise, o botão fica ativo e você clica direto por lá para entrar. Não tem link enviado por e-mail ou WhatsApp, fica tudo dentro do Fluxer mesmo."
 
 ---
 
@@ -90,7 +90,7 @@ Próximo plano de ação é liberado no Fluxer (em até 7 dias úteis)
 **Gatilhos:** "quero remarcar minha análise", "preciso mudar o horário", "não vou conseguir na data marcada", "como altero o horário da análise?"
 
 **Resposta base:**
-"Para remarcar, entra no Fluxer e vai na página do seu plano de ação. Se aparecer o botão Alterar data, você consegue escolher um novo horário direto por lá. Se esse botão não aparecer ou der algum problema, me avisa aqui que eu consigo remarcar para você. Me passa sua disponibilidade de agenda que eu verifico os horários disponíveis."
+"Para remarcar, entra no Fluxer e vai na página do seu plano de ação, aqui: https://flx.vendatodosantodia.com.br/academy. Se aparecer o botão Alterar data, você escolhe um novo horário direto por lá. Se esse botão não aparecer ou der algum problema, me passa a sua disponibilidade que eu remarco para você. E se não der tempo de cancelar antes da sessão, me avisa antes mesmo assim, para eu não deixar o analisador esperando."
 
 ---
 
@@ -99,7 +99,7 @@ Próximo plano de ação é liberado no Fluxer (em até 7 dias úteis)
 **Gatilhos:** "minha análise foi cancelada", "a análise sumiu do Fluxer", "não tem mais a análise agendada", "a análise foi desmarcada"
 
 **Resposta base:**
-"Entendo, vamos resolver. Se ainda aparecer o botão Cancelar análise no seu Fluxer, clica lá para liberar o processo de reagendamento. Depois me avisa aqui que eu libero novos horários para você escolher — o reagendamento precisa ser feito pelo CS porque precisamos abrir as agendas manualmente no sistema. Me passa sua disponibilidade de agenda que já verifico."
+"Entendo, vamos resolver. Se ainda aparecer o botão Cancelar análise no seu Fluxer (https://flx.vendatodosantodia.com.br/academy), clica lá para liberar o reagendamento. Depois me avisa por aqui que eu abro novos horários para você escolher, porque o reagendamento precisa ser feito pelo nosso lado, abrindo as agendas manualmente no sistema. Me passa a sua disponibilidade que eu já verifico."
 
 **Ação adicional:** após o mentorado confirmar que cancelou, liberar novas agendas no sistema para o mentorado.
 
@@ -110,9 +110,9 @@ Próximo plano de ação é liberado no Fluxer (em até 7 dias úteis)
 **Gatilhos:** "entrei na chamada mas o analisador não apareceu", "ficou esperando e ninguém entrou", "a análise não aconteceu"
 
 **Resposta base:**
-"Que situação chata, me desculpe muito pelo transtorno. Isso não deveria ter acontecido e eu já vou resolver tudo para você do nosso lado. Não precisa fazer nada — eu aciono a equipe agora, cuido do reagendamento e te mando um novo horário em breve."
+"Que situação chata, e isso realmente não deveria ter acontecido. Pode deixar que eu resolvo tudo do nosso lado. Você não precisa fazer nada. Eu aciono a equipe agora, cuido do reagendamento e te mando um novo horário em breve."
 
-**Ação adicional:** escalar internamente o caso com prioridade máxima, cancelar a análise no sistema e liberar agendas prioritárias para o mentorado. O CS entra em contato com o novo horário — o mentorado não faz nada.
+**Ação adicional:** escalar internamente o caso com prioridade máxima, cancelar a análise no sistema e liberar agendas prioritárias para o mentorado. O CS entra em contato com o novo horário, e o mentorado não faz nada.
 
 ---
 
@@ -121,7 +121,7 @@ Próximo plano de ação é liberado no Fluxer (em até 7 dias úteis)
 **Gatilhos:** "terminei todos os entregáveis, o que faço agora?", "como solicito a análise?", "concluí tudo, e agora?", "como peço a análise?"
 
 **Resposta base:**
-"Quando você conclui todos os entregáveis, aparece o botão Entregar plano de ação na tela do plano. Ao clicar, você vai responder uma avaliação rápida e confirmar os dados do seu projeto — é importante preencher com atenção porque essas informações vão para o analisador. Depois disso, o navegador confere as suas entregas e libera os horários de análise para você escolher no Fluxer."
+"Quando você conclui todos os entregáveis, aparece o botão Entregar plano de ação na tela do plano. Ao clicar, você vai responder uma avaliação rápida e confirmar os dados do seu projeto, e é importante preencher com atenção porque essas informações vão para o analisador. Depois disso, o navegador confere as suas entregas e libera os horários de análise para você escolher no Fluxer."
 
 ---
 
@@ -130,7 +130,7 @@ Próximo plano de ação é liberado no Fluxer (em até 7 dias úteis)
 **Gatilhos:** "quanto tempo leva para liberar os horários?", "quando aparece a agenda?", "faz quanto tempo que entreguei e não liberou"
 
 **Resposta base:**
-"Após você entregar o plano, o navegador confere as entregas e libera os horários — normalmente é feito em até 24 horas úteis. Quando as agendas ficarem disponíveis, aparecem direto no Fluxer para você escolher o melhor horário. Me passa quantos dias já faz desde que você entregou que eu verifico para você."
+"Após você entregar o plano, o navegador confere as entregas e libera os horários, normalmente em até 24 horas úteis. Quando as agendas ficarem disponíveis, aparecem direto no Fluxer para você escolher o melhor horário. Me passa quantos dias já faz desde que você entregou que eu verifico para você."
 
 **Ação adicional:** verificar no sistema se as entregas foram conferidas e, se não, acionar o navegador.
 

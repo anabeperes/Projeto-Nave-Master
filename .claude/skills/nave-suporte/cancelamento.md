@@ -36,10 +36,10 @@ O mentorado menciona que não consegue pagar, está apertado, perdeu renda ou al
 O redator deve escrever uma mensagem que:
 1. Acolhe sem julgamento — dificuldade financeira acontece.
 2. Diz que antes de qualquer decisão, vale conversar com a equipe financeira porque pode existir uma possibilidade de negociação.
-3. Passa o contato da Lia (financeiro) no WhatsApp: **[NÚMERO_DA_LIA]** para o mentorado entrar em contato diretamente.
+3. Passa o contato da Lya (financeiro) no WhatsApp: **+55 61 9988-3078** para o mentorado entrar em contato diretamente.
 4. Deixa a porta aberta: quando resolver, o Fluxo está aqui.
 
-**Ação adicional para o CS:** informar a Lia sobre o caso para ela já estar preparada para o contato.
+**Ação adicional para o CS:** informar a Lya sobre o caso para ela já estar preparada para o contato.
 
 ---
 
@@ -116,8 +116,8 @@ AÇÃO_ADICIONAL: aguardar retorno do mentorado com o motivo para direcionar cor
 INTENÇÃO: CANCELAMENTO_FINANCEIRO
 MOTIVO_IDENTIFICADO: [o que o mentorado disse]
 CONTEÚDO_DA_RESPOSTA:
-[Mensagem para o redator: acolhimento + indicação da Lia no WhatsApp ([NÚMERO_DA_LIA]) para verificar possibilidade de negociação + porta aberta para retorno.]
-AÇÃO_ADICIONAL: avisar a Lia sobre o caso antes do mentorado entrar em contato
+[Mensagem para o redator: acolhimento + indicação da Lya no WhatsApp (+55 61 9988-3078) para verificar possibilidade de negociação + porta aberta para retorno.]
+AÇÃO_ADICIONAL: avisar a Lya sobre o caso antes do mentorado entrar em contato
 ```
 
 ### Redirecionar para congelamento:

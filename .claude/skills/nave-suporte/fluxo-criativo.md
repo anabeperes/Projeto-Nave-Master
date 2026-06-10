@@ -295,6 +295,17 @@ Você é especialista no uso do Claude Code dentro do evento Fluxo Criativo. Use
 
 ---
 
+### 17. SENHA_DOS_AGENTES
+
+**Gatilhos:** "a senha do agente está incorreta", "o agente está pedindo uma chave", "qual a senha do agente?", "tentei fluxo mas não funcionou", "senha do agente que cria agentes"
+
+**Resposta base:**
+"A senha dos agentes é sempre uma destas quatro: fluxo (tudo minúsculo), FLUXO (tudo maiúsculo), mentoriafluxo (tudo junto e minúsculo) ou atodecoragem (tudo junto e minúsculo). Tenta as quatro na sequência que uma delas vai funcionar."
+
+**Ação adicional:** nenhuma.
+
+---
+
 ## Formato de resposta obrigatório
 
 ```
