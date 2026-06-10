@@ -60,4 +60,4 @@ Quando receber esse comando, o Claude Code executa a cadeia completa diretamente
 - [ ] Alimentar `nave-especialista-trafego` com os documentos de tráfego da Fernanda
 - [ ] Alimentar `nave-especialista-copy` com os prompts de copy e quiz
 - [ ] Testar com mensagens reais e calibrar os prompts
-- [ ] Integrar com n8n + Evolution API + Slack
+- [ ] Integrar com n8n + Evolution API + Dashboard na Vercel (o relatório diário e as sugestões são gravados no Supabase e exibidos no painel; não há mais envio para o Slack)

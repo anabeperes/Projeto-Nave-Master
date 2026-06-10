@@ -159,7 +159,7 @@ nave-master/
 | skill cancelamento.md | ✅ pronto |
 | skill congelamento.md | ✅ pronto |
 | skill reclamacao.md | ✅ pronto |
-| Integração n8n + Evolution API + Slack | ⚠️ Fase 2 |
+| Integração n8n + Evolution API + Dashboard (Vercel) | ⚠️ Fase 2 |
 
 ---
 
@@ -190,4 +190,4 @@ O orquestrador executa a cadeia completa e entrega a resposta pronta.
 4. Alimentar `nave-especialista-trafego` com metodologia de tráfego da Fernanda
 5. Alimentar `nave-especialista-copy` com prompts de copy e quiz da Fernanda
 6. Testar com mensagens reais de mentorados e calibrar prompts
-7. Integração n8n + Evolution API + Slack (Fase 2)
+7. Integração n8n + Evolution API + Dashboard na Vercel (Fase 2) — o relatório diário e as sugestões da IA são gravados no Supabase e exibidos no painel hospedado na Vercel (não há mais envio para o Slack)
