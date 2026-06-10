@@ -202,7 +202,7 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "0 21 * * 1-5"
+              "expression": "0 18 * * 1-5"
             }
           ]
         }
@@ -308,7 +308,7 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "0 12-20/2 * * 1-5"
+              "expression": "0 9-17/2 * * 1-5"
             }
           ]
         }
@@ -1501,7 +1501,8 @@
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate"
+    "binaryMode": "separate",
+    "timezone": "America/Sao_Paulo"
   },
   "versionId": "4d2ae105-7ab5-4c0f-8e67-8adea03e7731",
   "meta": {
