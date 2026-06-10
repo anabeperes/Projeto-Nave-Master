@@ -12,6 +12,10 @@
 --
 --  ⚠️ Rode este script ANTES de importar o "Workflow dash.json" novo, porque
 --     a query "Buscar Conversas Nao Lidas" passou a chamar esta função.
+--
+--  Obs: a tabela messages usa id do tipo uuid (não dá pra ordenar por id para
+--  saber o que é recente). Por isso ordenamos por received_at (quando a
+--  mensagem chegou), com fallback para inserted_at/updated_at.
 -- ============================================================
 
 -- As mensagens "unread" (as que serão respondidas AGORA) ficam de fora:
@@ -22,10 +26,10 @@ CREATE OR REPLACE FUNCTION get_conversation_context(
 )
 RETURNS text
 LANGUAGE sql STABLE AS $$
-  SELECT string_agg(linha, E'\n' ORDER BY id)
+  SELECT string_agg(linha, E'\n' ORDER BY ts)
   FROM (
     SELECT
-      id,
+      COALESCE(received_at, inserted_at::timestamptz, updated_at::timestamptz) AS ts,
       CASE
         WHEN direction = 'outgoing' THEN '[navegador]: '
         ELSE '[mentorado]: '
@@ -33,10 +37,10 @@ LANGUAGE sql STABLE AS $$
     FROM messages
     WHERE whatsapp_number = p_whatsapp_number
       AND status IS DISTINCT FROM 'unread'   -- só o que já foi tratado
-    ORDER BY id DESC                          -- pega as mais recentes
+    ORDER BY ts DESC                          -- pega as MAIS RECENTES de verdade
     LIMIT p_limit
   ) sub;                                       -- e devolve em ordem cronológica
 $$;
 
--- Conferência rápida (troque pelo número de um mentorado real para testar):
--- SELECT get_conversation_context('5511999999999', 12);
+-- Conferência rápida (troque pelo número/lid de um mentorado real para testar):
+-- SELECT get_conversation_context('11115476054162@lid', 12);

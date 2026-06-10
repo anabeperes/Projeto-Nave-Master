@@ -61,8 +61,8 @@ const inserirOutgoing = {
   parameters: {
     operation: 'executeQuery',
     query:
-      "INSERT INTO messages (contact_id, whatsapp_number, contact_name, direction, content, evolution_msg_id, status, instancia)\n" +
-      "VALUES (upsert_contact($1, $2), $1, $2, 'outgoing', $3, $4, 'read', $5)\n" +
+      "INSERT INTO messages (contact_id, whatsapp_number, contact_name, direction, content, evolution_msg_id, status, instancia, received_at)\n" +
+      "VALUES (upsert_contact($1, $2), $1, $2, 'outgoing', $3, $4, 'read', $5, now())\n" +
       "ON CONFLICT (evolution_msg_id) DO NOTHING;",
     options: {
       queryReplacement:
