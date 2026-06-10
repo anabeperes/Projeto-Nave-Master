@@ -43,7 +43,10 @@
   .brand-dot .material-symbols-rounded { font-size: 18px; }
   h1 { font-family: 'Public Sans', 'Inter', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: #0f172a; }
   .sub { color: var(--text-secondary); font-size: 13px; }
-  .link-aprendizado { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--blue); background: var(--blue-bg); border: 1px solid hsl(217 91% 60% / 0.3); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-family: inherit; }
+  .aprendizado-wrap { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
+  .aprendizado-data { font-family: inherit; font-size: 12px; font-weight: 600; color: var(--blue); background: var(--blue-bg); border: 1px solid hsl(217 91% 60% / 0.3); border-radius: 999px; padding: 5px 10px; cursor: pointer; outline: none; }
+  .aprendizado-data:focus { box-shadow: 0 0 0 3px hsl(217 91% 60% / 0.15); }
+  .link-aprendizado { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--blue); background: var(--blue-bg); border: 1px solid hsl(217 91% 60% / 0.3); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-family: inherit; }
   .link-aprendizado:hover { filter: brightness(0.97); }
   .link-aprendizado .material-symbols-rounded { font-size: 16px; }
   .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
@@ -201,9 +204,12 @@
     <span class="brand-dot"><span class="material-symbols-rounded">forum</span></span>
     <h1>Painel da Navegadora</h1>
     <span class="sub">Mentoria Fluxo · sugestões de resposta para o WhatsApp</span>
-    <button class="link-aprendizado" id="btn-aprendizado" onclick="copiarAprendizado()" title="Copiar as respostas que o CS editou, cada uma com a mensagem do mentorado que deu origem a ela">
-      <span class="material-symbols-rounded">school</span><span id="aprendizado-count">0</span> aprendizados
-    </button>
+    <span class="aprendizado-wrap">
+      <input type="date" id="aprendizado-data" class="aprendizado-data" onchange="atualizarStats()" title="Escolha o dia dos aprendizados a copiar">
+      <button class="link-aprendizado" id="btn-aprendizado" onclick="copiarAprendizado()" title="Copiar as respostas que o CS editou no dia escolhido, cada uma com a mensagem do mentorado que deu origem a ela. Envie ao fim do dia de atendimento.">
+        <span class="material-symbols-rounded">school</span><span id="aprendizado-count">0</span> aprendizados
+      </button>
+    </span>
     <span class="sessao" id="sessao" style="display:none">
       <span class="quem">WhatsApp: <b id="sessao-quem"></b></span>
       <button class="btn-sair" onclick="sair()"><span class="material-symbols-rounded">logout</span>Sair</button>
@@ -436,6 +442,20 @@ function lerEdicoes() { try { return JSON.parse(localStorage.getItem(KEY_EDICOES
 function salvarEdicoes(obj) { localStorage.setItem(KEY_EDICOES, JSON.stringify(obj)); }
 function lerCorrecoes() { try { return JSON.parse(localStorage.getItem(KEY_CORRECOES) || "[]"); } catch (e) { return []; } }
 function salvarCorrecoes(arr) { localStorage.setItem(KEY_CORRECOES, JSON.stringify(arr)); }
+// "YYYY-MM-DD" no fuso local (toISOString seria UTC e poderia trocar de dia).
+function dataLocalISO(d) {
+  const dt = (d instanceof Date) ? d : new Date(d);
+  return new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+// Aprendizados de um dia específico (YYYY-MM-DD) — cada CS envia os do seu dia ao fim do atendimento.
+function correcoesDaData(diaISO) {
+  return lerCorrecoes().filter(c => c.em && dataLocalISO(c.em) === diaISO);
+}
+// Data escolhida no seletor (ou hoje, se vazio).
+function dataAprendizadoSelecionada() {
+  const el = document.getElementById('aprendizado-data');
+  return (el && el.value) ? el.value : dataLocalISO(new Date());
+}
 // Status de cada sugestão (respondida / reaberta) — persiste entre recarregamentos da página
 function lerStatus() { try { return JSON.parse(localStorage.getItem(KEY_STATUS) || "{}"); } catch (e) { return {}; } }
 function salvarStatus(obj) { localStorage.setItem(KEY_STATUS, JSON.stringify(obj)); }
@@ -555,7 +575,7 @@ function atualizarStats() {
   document.getElementById("st-alta").textContent = pend.filter(s => s.urgencia === "ALTA").length;
   document.getElementById("st-media").textContent = pend.filter(s => s.urgencia === "MEDIA").length;
   document.getElementById("st-baixa").textContent = pend.filter(s => s.urgencia === "BAIXA").length;
-  document.getElementById("aprendizado-count").textContent = lerCorrecoes().length;
+  document.getElementById("aprendizado-count").textContent = correcoesDaData(dataAprendizadoSelecionada()).length;
 }
 
 // ============================================================
@@ -716,26 +736,29 @@ function setTab(f) {
   render();
 }
 
-// "Aprendizados": copia (para a área de transferência) todas as respostas que o
-// CS editou, cada uma junto com a mensagem do mentorado que deu origem a ela.
-// Antes isso baixava um JSON; agora entrega um texto pronto para colar.
+// "Aprendizados": copia (para a área de transferência) as respostas que o CS
+// editou no DIA ESCOLHIDO no seletor, cada uma junto com a mensagem do mentorado
+// que deu origem a ela. Cada CS envia os do seu dia ao fim do atendimento.
 function copiarAprendizado() {
-  const correcoes = lerCorrecoes();
-  if (!correcoes.length) { mostrarToast("Nenhuma edição aprendida ainda"); return; }
+  const diaISO = dataAprendizadoSelecionada();
+  const correcoes = correcoesDaData(diaISO);
+  if (!correcoes.length) { mostrarToast("Nenhuma edição aprendida nesse dia"); return; }
 
-  // Uma entrada por sugestão: se a mesma resposta foi editada mais de uma vez,
-  // vale a edição mais recente (a última gravada para aquele id).
+  // Uma entrada por sugestão: se a mesma resposta foi editada mais de uma vez
+  // no dia, vale a edição mais recente (a última gravada para aquele id).
   const porId = new Map();
   correcoes.forEach(c => porId.set(c.id, c));
   const itens = Array.from(porId.values());
 
-  const texto = itens.map((c, i) => [
+  const [y, m, d] = diaISO.split("-");
+  const cabecalho = `Aprendizados de ${d}/${m}/${y} (${itens.length})`;
+  const corpo = itens.map((c, i) => [
     `${i + 1}. ${c.mentorado || "Mentorado"}`,
     `Mensagem do mentorado:\n${(c.mensagem || "").trim()}`,
     `Resposta do CS:\n${(c.editado || "").trim()}`
   ].join("\n\n")).join("\n\n———\n\n");
 
-  navigator.clipboard.writeText(texto)
+  navigator.clipboard.writeText(cabecalho + "\n\n" + corpo)
     .then(() => mostrarToast(itens.length + " aprendizado(s) copiado(s)"))
     .catch(() => mostrarToast("Não foi possível copiar"));
 }
@@ -1022,6 +1045,9 @@ async function recarregarFila() {
 }
 
 async function iniciarApp() {
+  // Seletor de data dos aprendizados começa em hoje e não permite escolher o futuro.
+  const inputData = document.getElementById('aprendizado-data');
+  if (inputData) { const hojeISO = dataLocalISO(new Date()); inputData.max = hojeISO; if (!inputData.value) inputData.value = hojeISO; }
   try {
     SUGESTOES = await carregarSugestoes();
   } catch (e) {
