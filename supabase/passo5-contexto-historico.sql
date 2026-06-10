@@ -13,9 +13,10 @@
 --  ⚠️ Rode este script ANTES de importar o "Workflow dash.json" novo, porque
 --     a query "Buscar Conversas Nao Lidas" passou a chamar esta função.
 --
---  Obs: a tabela messages usa id do tipo uuid (não dá pra ordenar por id para
---  saber o que é recente). Por isso ordenamos por received_at (quando a
---  mensagem chegou), com fallback para inserted_at/updated_at.
+--  Obs: public.messages usa id do tipo uuid (não dá pra ordenar por id para
+--  saber o que é recente). As únicas colunas de data são received_at e read_at,
+--  então ordenamos por received_at (quando a mensagem chegou), com read_at
+--  de reserva.
 -- ============================================================
 
 -- As mensagens "unread" (as que serão respondidas AGORA) ficam de fora:
@@ -29,7 +30,7 @@ LANGUAGE sql STABLE AS $$
   SELECT string_agg(linha, E'\n' ORDER BY ts)
   FROM (
     SELECT
-      COALESCE(received_at, inserted_at::timestamptz, updated_at::timestamptz) AS ts,
+      COALESCE(received_at, read_at) AS ts,
       CASE
         WHEN direction = 'outgoing' THEN '[navegador]: '
         ELSE '[mentorado]: '
