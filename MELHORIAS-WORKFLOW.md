@@ -56,13 +56,48 @@ podia cumprimentar de novo ou reexplicar algo já dito.
 
 ---
 
-## ⏳ Incremento 2 — Suporte completo + Eventos (PRÓXIMO)
+## ✅ Incremento 2 — Suporte completo + Eventos (FEITO)
 
-- Portar as skills de suporte que já existem no repo (`cancelamento`,
-  `congelamento`, `reclamacao`, `padroes`) para o nó de Suporte — hoje o
-  workflow só tem 8 intenções fixas embutidas.
-- Adicionar a categoria **EVENTOS** (e dúvidas sobre entregas/metodologia) ao
-  Roteador, hoje limitado a SUPORTE/TRÁFEGO/COPY/FEEDBACK.
+**Problema que resolve:** o prompt de SUPORTE no workflow estava degradado —
+só 8 intenções fixas embutidas, sem as demandas sensíveis (cancelamento,
+congelamento, reclamação) que já existiam como skills ricas no repo. E o
+Roteador não tinha lugar para dúvidas sobre eventos, comunidade ou
+metodologia/entregas: tudo caía em SUPORTE no escuro.
+
+**O que mudou:**
+
+1. **SUPORTE completo.** O prompt de SUPORTE passou a carregar, verbatim, o
+   conteúdo canônico das skills do repo (zero paráfrase):
+   - `padroes.md` → base de "como funciona a mentoria" + 13 intenções
+     operacionais (boas-vindas, primeiros passos, Ajuste de Velas, navegador,
+     comunidade, eventos, newsletter, PIF, ferramentas externas, etc.).
+   - `cancelamento.md`, `congelamento.md`, `reclamacao.md` → os três playbooks
+     de demandas sensíveis, com suas árvores de decisão e tom obrigatório.
+   Um cabeçalho roteia internamente: o especialista escolhe UM playbook
+   (operacional, cancelamento, congelamento ou reclamação) e responde no
+   formato dele.
+
+2. **Categoria EVENTOS.** Nova entrada no mapa `specialistPrompts` e nova
+   categoria no Roteador, para eventos/retiros, comunidade, newsletter, PIF e
+   dúvidas informativas de metodologia/entregas (níveis da trilha, linha do
+   tempo, o que é cada entrega). Reaproveita o mesmo nó `API: Especialista`
+   (nenhum nó novo). A descrição de SUPORTE no Roteador passou a citar
+   explicitamente cancelamento/congelamento/reclamação, e o enum de
+   `CATEGORIA` ganhou EVENTOS nos dois blocos de formato.
+
+**Decisão de escopo (SUPORTE × EVENTOS):** SUPORTE cobre o operacional e o
+sensível ("algo travou", "quero sair", "estou insatisfeito"); EVENTOS cobre o
+informativo sobre o programa ("como funciona", "quando é o evento", "o que é o
+Ajuste de Velas"). Há sobreposição proposital na base de conhecimento
+(`padroes`) — se o Roteador errar o destino, os dois lados ainda têm a
+resposta. O `cache_control: ephemeral` mantém o custo baixo apesar dos prompts
+maiores.
+
+**Como aplicar:** reimportar o `Workflow dash.json` atualizado no n8n
+(substitui o atual). Nenhuma mudança de banco ou de credenciais.
+
+> Skills ainda não portadas (candidatas a um próximo incremento ou ao RAG):
+> `fluxer`, `financeiro`, `analise-plano-acao`, `fluxo-criativo`.
 
 ## ⏳ Incremento 3 — Qualidade e atualização
 
@@ -84,3 +119,4 @@ podia cumprimentar de novo ou reexplicar algo já dito.
 | Script | O que faz |
 |---|---|
 | `scripts/upgrade-workflow-ctx.mjs` | Aplica o Incremento 1 ao `Workflow dash.json` (determinístico, valida cada passo e a sintaxe de cada nó). |
+| `scripts/upgrade-workflow-suporte-eventos.mjs` | Aplica o Incremento 2: SUPORTE completo (padroes + cancelamento + congelamento + reclamação, lidos das skills) e categoria EVENTOS no Roteador e no mapa de especialistas. Idempotente. |
