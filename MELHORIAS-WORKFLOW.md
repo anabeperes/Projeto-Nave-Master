@@ -87,6 +87,30 @@ migração de banco é necessária neste incremento.
 > A separação por sub-tipo é uma classificação a mais do Haiku, então não há nós
 > novos nem reconexões (mais seguro, já que não dá para testar n8n daqui).
 
+## ✅ Incremento 2.5 — Fluxos de COPY, TRÁFEGO e FEEDBACK (FEITO)
+
+**Problema que resolvia:** as três categorias respondiam fora do fluxo real da
+navegadora. FEEDBACK gerava uma crítica VTSD na hora (quem revisa é o time de
+copy, em até 4 dias úteis), e avisos de "vou criar minha página" ou "vou subir
+campanha" caíam em resposta de metodologia em vez de incentivo.
+
+**O que mudou:**
+
+1. **FEEDBACK vira intake.** Recebe o pedido, identifica o material (PV, anúncio,
+   quiz cobertos; e-book/curso/produto não cobertos) e monta a mensagem de
+   encaminhamento ao time de copy com prazo de 4 dias úteis. A crítica VTSD
+   detalhada segue documentada em `.claude/skills/nave-especialista-feedback/`.
+2. **COPY e TRÁFEGO leem o momento.** `VAI_FAZER` parabeniza e incentiva a
+   execução; `JA_FEZ` em copy encaminha para o time, em tráfego pede a campanha
+   exportada do gerenciador (perguntando se sabe baixar); `DUVIDA` responde o
+   conceito direto.
+3. **Roteador** ganhou uma nota: avisos de que ainda vai fazer algo vão para
+   COPY/TRÁFEGO, não FEEDBACK.
+
+Os prompts viraram fonte de verdade nos agentes canônicos
+(`.claude/agents/nave-especialista-copy.md`, `-trafego.md`, `-feedback.md`) e o
+script os lê de lá. Sem nós novos.
+
 ## ⏳ Incremento 3 — Qualidade e atualização
 
 - **Verificador de guardrails** após o Redator (travessão, "!", pedidos de
@@ -108,3 +132,4 @@ migração de banco é necessária neste incremento.
 |---|---|
 | `scripts/upgrade-workflow-ctx.mjs` | Aplica o Incremento 1 ao `Workflow dash.json` (determinístico, valida cada passo e a sintaxe de cada nó). |
 | `scripts/upgrade-workflow-suporte.mjs` | Aplica o Incremento 2: sub-tipo de SUPORTE no Roteador, seleção da skill no Especialista (lê as skills de `.claude/skills/nave-suporte/`) e Regras de Comunicação no Redator. Idempotente, valida sintaxe + JSON. |
+| `scripts/upgrade-workflow-fluxos.mjs` | Aplica o Incremento 2.5: FEEDBACK vira intake e COPY/TRÁFEGO passam a ler o momento (lê os prompts de `.claude/agents/`). Rode depois do de suporte. Idempotente, valida sintaxe + JSON. |
