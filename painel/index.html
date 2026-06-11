@@ -318,6 +318,15 @@ const authAtivo = typeof window !== 'undefined' && window.supabase && SUPABASE_U
 const sbClient = authAtivo ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 let sessaoToken = null; // access_token do usuário logado (ou null no modo demo)
 
+// O token de login expira (~1h). O SDK renova sozinho; aqui acompanhamos a
+// renovação para que as chamadas (buscar fila, marcar como enviada) não
+// passem a falhar silenciosamente com o token antigo.
+if (sbClient) {
+  sbClient.auth.onAuthStateChange((_evento, sessao) => {
+    if (sessao && sessao.access_token) sessaoToken = sessao.access_token;
+  });
+}
+
 // Cabeçalhos do Supabase: usa o token do usuário quando logado; senão, a chave anônima.
 function sbHeaders(extra) {
   const token = sessaoToken || SUPABASE_ANON_KEY;
@@ -524,6 +533,9 @@ function montarCard(s) {
 }
 
 function passaFiltros(s) {
+  // Sugestão substituída por uma mais nova (mesmo mentorado mandou mensagem
+  // nova antes da resposta): só a versão mais recente aparece.
+  if (s.status === "substituida") return false;
   const passaBusca = !buscaAtual
     || (s.contact_name || "").toLowerCase().includes(buscaAtual)
     || (s.mensagens || "").toLowerCase().includes(buscaAtual)
@@ -570,7 +582,7 @@ function atualizarBotaoMarcarTodas() {
 }
 
 function atualizarStats() {
-  const pend = SUGESTOES.filter(s => s.status !== "enviada");
+  const pend = SUGESTOES.filter(s => s.status !== "enviada" && s.status !== "substituida");
   document.getElementById("st-pend").textContent = pend.length;
   document.getElementById("st-alta").textContent = pend.filter(s => s.urgencia === "ALTA").length;
   document.getElementById("st-media").textContent = pend.filter(s => s.urgencia === "MEDIA").length;
@@ -708,7 +720,7 @@ function togglePendentes(e) {
   if (e) e.stopPropagation();
   const pop = document.getElementById("pend-pop");
   if (pop.classList.contains("show")) { pop.classList.remove("show"); return; }
-  const pendentes = SUGESTOES.filter(s => s.status !== "enviada")
+  const pendentes = SUGESTOES.filter(s => s.status !== "enviada" && s.status !== "substituida")
     .sort((a, b) => new Date(b.criada_em) - new Date(a.criada_em));
   let html = `<div class="pp-titulo">Mentorados pendentes (${pendentes.length})</div>`;
   html += pendentes.length
