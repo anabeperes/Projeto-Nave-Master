@@ -772,7 +772,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "// ============================================================\n// CONFIG DA TRANSCRICAO DE AUDIO\n// Preencha a URL base e a apikey da SUA instancia Evolution para baixar o audio,\n// e o endpoint/modelo de transcricao (padrao OpenAI Whisper).\n//\n// Para usar a Groq (mais barata, modelo v3) troque so estes dois campos:\n//   transcribe_url: 'https://api.groq.com/openai/v1/audio/transcriptions'\n//   transcribe_model: 'whisper-large-v3'\n// (a Groq e compativel com a API da OpenAI, o resto do fluxo nao muda)\n// ============================================================\nreturn {\n  json: {\n    ...$json,\n    evolution_url: 'https://COLE_AQUI_SUA_URL_EVOLUTION',\n    evolution_apikey: 'COLE_AQUI_SUA_APIKEY_EVOLUTION',\n    transcribe_url: 'https://api.openai.com/v1/audio/transcriptions',\n    transcribe_model: 'whisper-1'\n  }\n};"
+        "jsCode": "// ============================================================\n// CONFIG DA TRANSCRICAO DE AUDIO\n// Valores ativos: Evolution (baixar audio) + Groq Whisper (transcrever).\n// A chave da Groq fica em transcribe_apikey e e usada no header do no Whisper.\n//\n// Para voltar pra OpenAI, troque os tres campos abaixo:\n//   transcribe_url: 'https://api.openai.com/v1/audio/transcriptions'\n//   transcribe_model: 'whisper-1'\n//   transcribe_apikey: 'sk-...'\n// (Groq e OpenAI sao compativeis, o resto do fluxo nao muda)\n// ============================================================\nreturn {\n  json: {\n    ...$json,\n    evolution_url: 'http://187.127.254.85:8080',\n    evolution_apikey: 'MinhaChaveSecreta2024',\n    transcribe_url: 'https://api.groq.com/openai/v1/audio/transcriptions',\n    transcribe_model: 'whisper-large-v3',\n    transcribe_apikey: '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'\n  }\n};"
       },
       "id": "a11d0002-0000-4000-8000-000000000002",
       "name": "Configurar Transcricao",
@@ -847,8 +847,15 @@
       "parameters": {
         "method": "POST",
         "url": "={{ $('Configurar Transcricao').item.json.transcribe_url }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Configurar Transcricao').item.json.transcribe_apikey }}"
+            }
+          ]
+        },
         "sendBody": true,
         "contentType": "multipart-form-data",
         "bodyParameters": {
@@ -895,13 +902,7 @@
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 5000,
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "COLE_CRED_OPENAI",
-          "name": "OpenAI Whisper"
-        }
-      }
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
