@@ -91,6 +91,12 @@ $$;
 -- LIMPEZA do que já está preso no banco.
 -- ============================================================
 
+-- 2a-0) A trava de status das sugestões precisa conhecer o valor
+--       'substituida' (usado pelo WF-11-06 e pela limpeza abaixo):
+ALTER TABLE sugestoes DROP CONSTRAINT IF EXISTS sugestoes_status_check;
+ALTER TABLE sugestoes ADD CONSTRAINT sugestoes_status_check
+  CHECK (status IN ('pendente', 'enviada', 'substituida')) NOT VALID;
+
 -- 2a) Conferir o tamanho do problema antes de limpar:
 SELECT count(*) AS mensagens_unread_com_mais_de_7_dias
 FROM messages
