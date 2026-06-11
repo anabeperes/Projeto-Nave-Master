@@ -7,6 +7,10 @@
 --  ⚠️ Rode este script JUNTO com a importação do "WF-11-06.json":
 --     o nó "Buscar Stats do Dia" passou a chamar a função nova
 --     get_daily_stats_por_instancia() criada aqui.
+--
+--  Colunas de data usadas (conferidas no schema real da tabela):
+--    received_at = quando a mensagem chegou
+--    read_at     = quando a conversa foi marcada como respondida
 -- ============================================================
 
 
@@ -31,8 +35,8 @@ CREATE POLICY p_relatorios_select ON relatorios_diarios
   USING (instancia IN (SELECT minhas_instancias()));
 
 -- Estatísticas do dia separadas por instância (uma linha por navegador).
--- ⚠️ Pressupõe que a tabela messages tem a coluna de data "created_at".
---    Se a sua coluna tiver outro nome, ajuste os 3 pontos marcados abaixo.
+-- Tempo de resposta = read_at - received_at (do recebimento da mensagem
+-- até a conversa ser marcada como respondida).
 CREATE OR REPLACE FUNCTION get_daily_stats_por_instancia(p_data date)
 RETURNS TABLE (
   instancia            text,
@@ -52,28 +56,25 @@ LANGUAGE sql STABLE AS $$
       m.instancia,
       m.whatsapp_number,
       m.contact_name,
-      m.created_at,                                       -- (1) coluna de data
-      (SELECT min(o.created_at)                            -- (2) coluna de data
-         FROM messages o
-        WHERE o.whatsapp_number = m.whatsapp_number
-          AND o.direction = 'outgoing'
-          AND o.created_at > m.created_at) AS respondida_em
+      m.received_at,
+      m.read_at,
+      m.status
     FROM messages m
     WHERE m.direction = 'incoming'
-      AND m.created_at::date = p_data                      -- (3) coluna de data
+      AND (m.received_at AT TIME ZONE 'America/Sao_Paulo')::date = p_data
   )
   SELECT
     COALESCE(r.instancia, 'sem_instancia')                                AS instancia,
     count(*)                                                              AS total_mensagens,
     count(DISTINCT r.whatsapp_number)                                     AS mentorados_unicos,
     string_agg(DISTINCT COALESCE(NULLIF(r.contact_name, ''), r.whatsapp_number), ', ') AS nomes_unicos,
-    count(*) FILTER (WHERE r.respondida_em IS NOT NULL)                   AS mensagens_respondidas,
-    count(*) FILTER (WHERE r.respondida_em IS NULL)                       AS mensagens_pendentes,
-    round(avg(EXTRACT(EPOCH FROM (r.respondida_em - r.created_at)) / 60)::numeric, 1)  AS tempo_medio_min,
+    count(*) FILTER (WHERE r.read_at IS NOT NULL OR r.status = 'read')    AS mensagens_respondidas,
+    count(*) FILTER (WHERE r.read_at IS NULL AND r.status IS DISTINCT FROM 'read') AS mensagens_pendentes,
+    round(avg(EXTRACT(EPOCH FROM (r.read_at - r.received_at)) / 60)::numeric, 1)  AS tempo_medio_min,
     round((percentile_cont(0.5) WITHIN GROUP (
-      ORDER BY EXTRACT(EPOCH FROM (r.respondida_em - r.created_at)) / 60))::numeric, 1) AS tempo_mediano_min,
-    round(max(EXTRACT(EPOCH FROM (r.respondida_em - r.created_at)) / 60)::numeric, 1)  AS tempo_max_min,
-    round(min(EXTRACT(EPOCH FROM (r.respondida_em - r.created_at)) / 60)::numeric, 1)  AS tempo_min_min
+      ORDER BY EXTRACT(EPOCH FROM (r.read_at - r.received_at)) / 60))::numeric, 1) AS tempo_mediano_min,
+    round(max(EXTRACT(EPOCH FROM (r.read_at - r.received_at)) / 60)::numeric, 1)  AS tempo_max_min,
+    round(min(EXTRACT(EPOCH FROM (r.read_at - r.received_at)) / 60)::numeric, 1)  AS tempo_min_min
   FROM recebidas r
   GROUP BY COALESCE(r.instancia, 'sem_instancia');
 $$;
@@ -94,12 +95,12 @@ $$;
 SELECT count(*) AS mensagens_unread_com_mais_de_7_dias
 FROM messages
 WHERE status = 'unread'
-  AND created_at < now() - interval '7 days';
+  AND received_at < now() - interval '7 days';
 
 -- 2b) DESCOMENTE para marcar como lidas as mensagens presas há mais
 --     de 7 dias (elas continuam no histórico, só param de gerar cartão):
 -- UPDATE messages SET status = 'read'
---  WHERE status = 'unread' AND created_at < now() - interval '7 days';
+--  WHERE status = 'unread' AND received_at < now() - interval '7 days';
 
 -- 2c) DESCOMENTE para arquivar sugestões pendentes duplicadas,
 --     mantendo só a mais recente de cada mentorado:
@@ -119,15 +120,15 @@ WHERE status = 'unread'
 -- suspeitas (instancia fora da lista oficial) para você revisar:
 -- ============================================================
 SELECT id, whatsapp_number, contact_name, direction, content,
-       evolution_msg_id, instancia, created_at
+       evolution_msg_id, instancia, received_at
 FROM messages
 WHERE instancia IS NOT NULL
   AND instancia NOT IN ('wa2', 'manu', 'Darah', 'Livia', 'Felipe', 'Ruan', 'Robson')
-ORDER BY created_at DESC;
+ORDER BY received_at DESC;
 
 -- Para corrigir uma linha suspeita (exemplo — ajuste id e instância):
 -- UPDATE messages SET instancia = 'manu', evolution_msg_id = 'corrigido-' || id
---  WHERE id = 123;
+--  WHERE id = '...cole-o-id-aqui...';
 
 
 -- ============================================================
