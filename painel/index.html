@@ -486,9 +486,9 @@ function escapar(str) { return String(str == null ? "" : str).replace(/&/g, "&am
 function montarCard(s) {
   const u = classeUrg(s.urgencia);
   const editando = editandoId === s.id;
-  const lembreteHtml = s.lembrete && s.lembrete.trim()
-    ? `<div class="bloco"><div class="rotulo">Lembrete pro CS</div><div class="lembrete"><span class="material-symbols-rounded">push_pin</span><span>${escapar(s.lembrete)}</span></div></div>`
-    : "";
+  // Bloco "Lembrete pro CS" desativado a pedido do time (11/06): o lembrete
+  // continua salvo no banco, só não aparece mais no painel.
+  const lembreteHtml = "";
   const carimbo = s.status === "enviada" && s.enviada_em
     ? `<span class="meta">Enviada ${fmtDataHora(s.enviada_em)}</span>`
     : `<span class="meta">${fmtTempo(s.horas_aguardando)}<br>${s.qtd_mensagens} msg</span>`;
