@@ -141,6 +141,7 @@ FROM pg_class
 WHERE relname IN ('messages', 'contacts', 'sugestoes', 'relatorios_diarios');
 
 -- Contatos @lid criados pelo bug (devem parar de surgir com o WF-11-06):
-SELECT whatsapp_number, contact_name
+-- (a tabela contacts nao tem contact_name; o nome fica na coluna "name")
+SELECT whatsapp_number
 FROM contacts
 WHERE whatsapp_number LIKE '%@lid%' OR whatsapp_number !~ '^[0-9]+$';
