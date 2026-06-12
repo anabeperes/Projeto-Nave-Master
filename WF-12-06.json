@@ -241,8 +241,7 @@
       "parameters": {
         "method": "POST",
         "url": "={{ $('Configurar Supabase 18h').item.json.supabase_url }}/rest/v1/relatorios_diarios",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
+        "authentication": "none",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -281,13 +280,7 @@
       ],
       "retryOnFail": true,
       "maxTries": 3,
-      "waitBetweenTries": 3000,
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "WzvsFBC0LqoLdf0n",
-          "name": "Header Auth account 2"
-        }
-      }
+      "waitBetweenTries": 3000
     },
     {
       "parameters": {
@@ -325,7 +318,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT\n  v.whatsapp_number,\n  v.contact_name,\n  v.qtd_mensagens,\n  v.mensagens_concatenadas,\n  v.horas_aguardando,\n  v.primeira_mensagem_em,\n  v.ultima_mensagem_em,\n  get_conversation_context(v.whatsapp_number, 12) AS historico_recente,\n  (SELECT m.instancia\n     FROM messages m\n    WHERE m.whatsapp_number = v.whatsapp_number\n      AND m.direction = 'incoming'\n      AND m.instancia IS NOT NULL\n    ORDER BY m.received_at DESC\n    LIMIT 1) AS instancia\nFROM v_unread_conversations v;",
+        "query": "SELECT\n  v.whatsapp_number,\n  v.contact_name,\n  v.qtd_mensagens,\n  v.mensagens_concatenadas,\n  v.horas_aguardando,\n  v.primeira_mensagem_em,\n  v.ultima_mensagem_em,\n  get_conversation_context(v.whatsapp_number, 12) AS historico_recente,\n  (SELECT m.instancia\n     FROM messages m\n    WHERE m.whatsapp_number = v.whatsapp_number\n      AND m.instancia IN ('wa2','manu','Darah','Livia','Felipe','Ruan','Robson')\n    ORDER BY m.received_at DESC\n    LIMIT 1) AS instancia\nFROM v_unread_conversations v;",
         "options": {}
       },
       "id": "93cffdbc-2980-41f6-a7fa-6c4c0cb497a5",
@@ -394,8 +387,7 @@
       "parameters": {
         "method": "POST",
         "url": "={{ $('Configurar Supabase').item.json.supabase_url }}/rest/v1/sugestoes",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
+        "authentication": "none",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -410,6 +402,10 @@
             {
               "name": "Prefer",
               "value": "return=minimal"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Configurar Supabase').item.json.supabase_anon_key }}"
             }
           ]
         },
@@ -430,13 +426,7 @@
       ],
       "retryOnFail": true,
       "maxTries": 3,
-      "waitBetweenTries": 3000,
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "WzvsFBC0LqoLdf0n",
-          "name": "Header Auth account 2"
-        }
-      }
+      "waitBetweenTries": 3000
     },
     {
       "parameters": {
@@ -690,14 +680,17 @@
     {
       "parameters": {
         "url": "={{ $('Configurar Supabase').item.json.supabase_url }}/rest/v1/sugestoes?select=whatsapp_number,criada_em&order=criada_em.desc&limit=1000",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
+        "authentication": "none",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "apikey",
               "value": "={{ $('Configurar Supabase').item.json.supabase_anon_key }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Configurar Supabase').item.json.supabase_anon_key }}"
             }
           ]
         },
@@ -716,12 +709,6 @@
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 3000,
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "WzvsFBC0LqoLdf0n",
-          "name": "Header Auth account 2"
-        }
-      },
       "alwaysOutputData": true,
       "executeOnce": true
     },
@@ -1088,8 +1075,7 @@
       "parameters": {
         "method": "PATCH",
         "url": "={{ $('Configurar Supabase').item.json.supabase_url }}/rest/v1/sugestoes?whatsapp_number=eq.{{ encodeURIComponent($json.whatsapp_number) }}&status=eq.pendente",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
+        "authentication": "none",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -1128,13 +1114,7 @@
       ],
       "retryOnFail": true,
       "maxTries": 3,
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "WzvsFBC0LqoLdf0n",
-          "name": "Header Auth account 2"
-        }
-      }
+      "onError": "continueRegularOutput"
     }
   ],
   "pinData": {},

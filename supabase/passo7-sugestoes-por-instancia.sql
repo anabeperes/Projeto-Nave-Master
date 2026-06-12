@@ -2,21 +2,19 @@
 --  Nave Master — Passo 7: cada navegador vê só as SUAS sugestões
 --  (corrige o painel "embaralhado" entre os navegadores)
 -- ------------------------------------------------------------
---  Cole TUDO no SQL Editor do Supabase e clique em RUN.
---  É seguro rodar mais de uma vez (idempotente).
+--  ✅ EXECUTADO em 12/06/2026 direto no banco (via Management API).
+--  Fica aqui como registro e pode ser rodado de novo sem problema
+--  (idempotente).
 --
---  ⚠️ Rode este script JUNTO com a importação do "WF-12-06.json":
---     o workflow novo grava o carimbo (instancia) em toda sugestão.
---
---  O problema: a trava das sugestões filtrava pelo NÚMERO do mentorado,
---  herdando o dono pela tabela messages. Só que (a) o histórico antigo
---  foi todo carimbado como 'wa2' (passo 4) e (b) há mentorados com
---  mensagem em mais de uma instância. Resultado: a mesma sugestão
---  aparecia no painel de vários navegadores ao mesmo tempo.
---
---  A correção: a sugestão passa a ter o PRÓPRIO carimbo (instancia) e a
---  trava usa esse carimbo direto. O dono de um mentorado é a instância
---  da mensagem RECEBIDA mais recente dele (se trocou de nave, vale a atual).
+--  O que estava acontecendo (conferido no banco em 12/06):
+--  1. A trava das sugestões filtrava pelo NÚMERO do mentorado, herdando
+--     o dono pela tabela messages. O histórico antigo (3.173 mensagens)
+--     era todo da 'wa2' e havia mentorados com mensagem em mais de uma
+--     instância -> a mesma sugestão aparecia para vários navegadores.
+--  2. 1.022 mensagens estavam com o carimbo (instancia) CORROMPIDO pelo
+--     bug da vírgula do WF-10/06 (pedaços de mensagem e IDs no campo).
+--     O lixo parou em 11/06 às 17:20, quando o WF-11/06 entrou.
+--  3. A sugestão era gravada SEM carimbo próprio.
 --
 --  Mapa oficial (instância exata da Evolution -> navegador):
 --    wa2 -> Ana          | manu  -> Manu (Emanuelle)
@@ -25,12 +23,7 @@
 -- ============================================================
 
 
--- 0) RELIGAR A TRAVA (RLS) ------------------------------------------------------
---    Conferido em 12/06: a chave pública lia a tabela sugestoes SEM login,
---    ou seja, a trava estava desligada/aberta — todo navegador logado via
---    as sugestões de todos. Liga (de novo) em todas as tabelas do painel.
---    ⚠️ Com a trava ligada, o nó "Salvar Sugestao no Painel" do n8n PRECISA
---    estar com a chave service_role (Passo 5 do guia), senão para de salvar.
+-- 0) TRAVA LIGADA (já estava; no-op idempotente) -------------------------------
 ALTER TABLE messages           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contacts           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sugestoes          ENABLE ROW LEVEL SECURITY;
@@ -38,45 +31,59 @@ ALTER TABLE atendentes         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE relatorios_diarios ENABLE ROW LEVEL SECURITY;
 
 
--- 1) CARIMBO NA SUGESTÃO ------------------------------------------------------
+-- 1) CARIMBO NA SUGESTÃO --------------------------------------------------------
 ALTER TABLE sugestoes ADD COLUMN IF NOT EXISTS instancia text;
 CREATE INDEX IF NOT EXISTS idx_sugestoes_instancia ON sugestoes (instancia);
 
 
--- 2) DONO ATUAL DE UM MENTORADO ----------------------------------------------
---    A instância da mensagem recebida mais recente daquele número.
+-- 2) LIMPAR OS CARIMBOS CORROMPIDOS PELO BUG DA VÍRGULA -------------------------
+--    (pedaços de mensagem/IDs no campo instancia viram NULL)
+UPDATE messages SET instancia = NULL
+WHERE instancia IS NOT NULL
+  AND instancia NOT IN ('wa2','manu','Darah','Livia','Felipe','Ruan','Robson');
+
+
+-- 3) DONO ATUAL DE UM MENTORADO --------------------------------------------------
+--    A instância (válida) da mensagem mais recente daquele número, em QUALQUER
+--    direção — mensagem enviada pelo navegador também identifica o dono (isso
+--    recupera conversas @lid cujas mensagens recebidas ficaram sem carimbo).
 --    SECURITY DEFINER: a checagem roda com privilégio, sem laço de RLS.
 CREATE OR REPLACE FUNCTION dono_atual(p_numero text)
-RETURNS text
-LANGUAGE sql STABLE SECURITY DEFINER
+RETURNS text LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = public AS $$
   SELECT instancia FROM messages
   WHERE whatsapp_number = p_numero
-    AND direction = 'incoming'
-    AND instancia IS NOT NULL
+    AND instancia IN ('wa2','manu','Darah','Livia','Felipe','Ruan','Robson')
   ORDER BY received_at DESC
   LIMIT 1;
 $$;
 
 
--- 3) CARIMBAR AS SUGESTÕES QUE JÁ EXISTEM --------------------------------------
---    Cada sugestão herda o dono atual do mentorado. Re-carimba também as que
---    estavam com carimbo desatualizado (mentorado que trocou de nave).
-UPDATE sugestoes s
-SET instancia = ult.instancia
-FROM (
-  SELECT DISTINCT ON (whatsapp_number) whatsapp_number, instancia
-  FROM messages
-  WHERE direction = 'incoming' AND instancia IS NOT NULL
-  ORDER BY whatsapp_number, received_at DESC
-) ult
-WHERE s.whatsapp_number = ult.whatsapp_number
-  AND (s.instancia IS NULL OR s.instancia <> ult.instancia);
+-- 4) CARIMBAR AS SUGESTÕES EXISTENTES --------------------------------------------
+UPDATE sugestoes s SET instancia = dono_atual(s.whatsapp_number)
+WHERE s.instancia IS NULL
+   OR s.instancia NOT IN ('wa2','manu','Darah','Livia','Felipe','Ruan','Robson');
 
 
--- 4) TRAVA DIRETA PELO CARIMBO --------------------------------------------------
+-- 5) GATILHO: SUGESTÃO NOVA GANHA O CARIMBO AUTOMATICAMENTE ----------------------
+--    Mesmo que o workflow grave sem instancia (WF-11/06), o banco carimba
+--    sozinho com o dono atual. O WF-12-06 também envia o carimbo (redundância).
+CREATE OR REPLACE FUNCTION sugestoes_carimbo_automatico()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public AS $$
+BEGIN
+  IF NEW.instancia IS NULL THEN
+    NEW.instancia := dono_atual(NEW.whatsapp_number);
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS trg_sugestoes_carimbo ON sugestoes;
+CREATE TRIGGER trg_sugestoes_carimbo BEFORE INSERT ON sugestoes
+FOR EACH ROW EXECUTE FUNCTION sugestoes_carimbo_automatico();
+
+
+-- 6) TRAVA DIRETA PELO CARIMBO ----------------------------------------------------
 --    Sugestão sem carimbo não aparece para NINGUÉM (antes aparecia para todos).
---    O WF-12-06 grava o carimbo em toda sugestão nova.
 DROP POLICY IF EXISTS p_sugestoes_select ON sugestoes;
 CREATE POLICY p_sugestoes_select ON sugestoes
   FOR SELECT TO authenticated
@@ -87,88 +94,38 @@ CREATE POLICY p_sugestoes_update ON sugestoes
   FOR UPDATE TO authenticated
   USING (instancia IN (SELECT minhas_instancias()));
 
--- Contatos (aba Métricas) seguem a mesma regra do dono atual: o mentorado
--- aparece só para a nave da última mensagem dele (antes, quem tinha QUALQUER
--- mensagem antiga com o número via o contato — ex.: todo o histórico 'wa2').
+-- Contatos (aba Métricas) seguem a regra do dono atual.
 DROP POLICY IF EXISTS p_contacts_select ON contacts;
 CREATE POLICY p_contacts_select ON contacts
   FOR SELECT TO authenticated
   USING (dono_atual(whatsapp_number) IN (SELECT minhas_instancias()));
 
-
--- 5) LIGAR (E CORRIGIR) CADA LOGIN À SUA INSTÂNCIA ------------------------------
---    Remove vínculo errado (ex.: login apontando para instância de outra pessoa)
---    e garante o mapa oficial. Os nomes de instância são EXATOS
---    (maiúsculas/minúsculas como estão na Evolution API).
-DELETE FROM atendentes a
-USING auth.users u
-WHERE a.user_id = u.id
-  AND u.email IN ('ana@vtsd.com.br', 'emanuelle@vtsd.com.br', 'darah@vtsd.com.br',
-                  'livia@vtsd.com.br', 'felipefae@vtsd.com.br', 'ruam@vtsd.com.br',
-                  'robson@vtsd.com.br')
-  AND (u.email, a.instancia) NOT IN (
-    ('ana@vtsd.com.br',       'wa2'),
-    ('emanuelle@vtsd.com.br', 'manu'),
-    ('darah@vtsd.com.br',     'Darah'),
-    ('livia@vtsd.com.br',     'Livia'),
-    ('felipefae@vtsd.com.br', 'Felipe'),
-    ('ruam@vtsd.com.br',      'Ruan'),
-    ('robson@vtsd.com.br',    'Robson')
-  );
-
-INSERT INTO atendentes (user_id, instancia, nome)
-SELECT u.id, m.instancia, m.nome
-FROM (VALUES
-    ('ana@vtsd.com.br',       'wa2',    'Ana'),
-    ('emanuelle@vtsd.com.br', 'manu',   'Manu'),
-    ('darah@vtsd.com.br',     'Darah',  'Darah'),
-    ('livia@vtsd.com.br',     'Livia',  'Lívia'),
-    ('felipefae@vtsd.com.br', 'Felipe', 'Felipe'),
-    ('ruam@vtsd.com.br',      'Ruan',   'Ruam'),
-    ('robson@vtsd.com.br',    'Robson', 'Robson')
-) AS m(email, instancia, nome)
-JOIN auth.users u ON u.email = m.email
-ON CONFLICT (user_id, instancia) DO UPDATE SET nome = EXCLUDED.nome;
+-- OBS: o mapa login -> instância na tabela atendentes foi conferido em 12/06
+-- e já estava correto (os 7 vínculos). Se precisar recriar, use o passo 4.
 
 
 -- ============================================================
---  CONFERÊNCIAS (saem no resultado do RUN)
+--  CONFERÊNCIAS
 -- ============================================================
 
--- (a) Cada login com a sua instância — deve listar 7 linhas, uma por pessoa.
---     Se faltar alguém, o usuário daquele e-mail não existe em
---     Authentication > Users (criar e rodar este script de novo).
+-- (a) Cada login com a sua instância — deve listar 7 linhas.
 SELECT u.email, a.instancia, a.nome
 FROM atendentes a JOIN auth.users u ON u.id = a.user_id
 ORDER BY a.instancia;
 
--- (b) Instâncias que estão chegando nas mensagens — os nomes têm que bater
---     EXATAMENTE com o mapa acima ('wa2', 'manu', 'Darah', 'Livia', 'Felipe',
---     'Ruan', 'Robson'). Nome fora da lista = webhook da Evolution com o nome
---     de instância diferente do esperado.
-SELECT COALESCE(instancia, '(sem carimbo)') AS instancia,
-       count(*) AS mensagens,
-       max(received_at) AS ultima_mensagem
-FROM messages
-GROUP BY 1 ORDER BY 1;
-
--- (c) O que cada navegador vai ver no painel a partir de agora:
+-- (b) O que cada navegador vê no painel:
 SELECT COALESCE(instancia, '(sem carimbo — invisível)') AS instancia,
        count(*) FILTER (WHERE status = 'pendente') AS pendentes,
        count(*) AS total
 FROM sugestoes
 GROUP BY 1 ORDER BY 1;
 
--- (d) A trava está ligada? (todas as linhas devem mostrar rls_ligada = true)
---     E as políticas devem valer só para 'authenticated' — se aparecer
---     alguma política com role 'anon' ou 'public' nas tabelas do painel,
---     ela é a porta aberta que deixava todo mundo ver tudo.
-SELECT relname AS tabela, relrowsecurity AS rls_ligada
-FROM pg_class
-WHERE relname IN ('messages', 'contacts', 'sugestoes', 'atendentes', 'relatorios_diarios')
-  AND relkind = 'r';
+-- (c) Carimbos chegando nas mensagens (só os 7 nomes oficiais + null):
+SELECT COALESCE(instancia, '(null)') AS instancia, count(*) AS msgs,
+       max(received_at) AS ultima
+FROM messages GROUP BY 1 ORDER BY 1;
 
-SELECT tablename, policyname, roles, cmd
-FROM pg_policies
-WHERE tablename IN ('messages', 'contacts', 'sugestoes', 'atendentes', 'relatorios_diarios')
-ORDER BY tablename, policyname;
+-- ⚠️ AINDA ABERTO: as políticas anon ("permitir select/insert/update anon")
+-- continuam existindo — qualquer pessoa com a chave pública lê/edita as
+-- sugestões. Elas só podem ser removidas DEPOIS que o n8n estiver com a
+-- chave secreta (WF-12-06). Ver supabase/passo8-fechar-anon.sql.
