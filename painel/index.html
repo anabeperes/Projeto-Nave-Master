@@ -371,17 +371,21 @@ async function carregarSugestoes() {
 }
 
 async function salvarStatusSupabase(id, status, enviadaEm) {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
-  // A persistência local (localStorage) já garante o estado; o Supabase é o espelho.
-  // Se a gravação remota falhar, não deixamos o erro quebrar a ação do usuário.
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return false;
+  // A persistência local (localStorage) já garante o estado; o Supabase é o
+  // espelho. Se a gravação remota falhar, não deixamos o erro quebrar a ação
+  // do usuário — a autocura em aplicarPersistencia() reenvia na próxima carga.
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/sugestoes?id=eq.${id}`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/sugestoes?id=eq.${id}`, {
       method: 'PATCH',
       headers: sbHeaders({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
       body: JSON.stringify({ status, enviada_em: enviadaEm })
     });
+    if (!r.ok) console.error(`Supabase recusou a gravação do status (HTTP ${r.status}); mantido localmente, será reenviado na próxima carga.`);
+    return r.ok;
   } catch (e) {
     console.error('Não foi possível gravar o status no Supabase (mantido localmente):', e);
+    return false;
   }
 }
 
@@ -660,9 +664,9 @@ function alternarEnviada(id) {
   if (s.status === "enviada") { s.status = "pendente"; s.enviada_em = null; }
   else { s.status = "enviada"; s.enviada_em = new Date().toISOString(); }
 
-  // Persiste o status para sobreviver ao recarregar a página.
-  // O carimbo "em" registra quando a mudança foi feita neste dispositivo,
-  // usado para reconciliar com o Supabase (a alteração mais recente vence).
+  // Persiste o status para sobreviver ao recarregar a página (F5): na
+  // reconciliação, a ação deste navegador é soberana sobre o que vem do
+  // banco. O carimbo "em" registra quando a mudança foi feita (diagnóstico).
   const statusSalvos = lerStatus();
   statusSalvos[id] = { status: s.status, enviada_em: s.enviada_em, em: new Date().toISOString() };
   salvarStatus(statusSalvos);
@@ -1003,25 +1007,39 @@ document.addEventListener("click", e => {
 });
 
 // Reconcilia o status de uma sugestão entre a fonte (remoto/mock) e o que foi
-// salvo localmente. No modo demonstração, o local manda. No modo Supabase, a
-// alteração mais recente vence — assim o status feito em outro dispositivo (que
-// chega pelo banco) não é sobrescrito por um estado local antigo, e vice-versa.
+// salvo neste navegador. Regra: a ação do navegador é soberana — uma mensagem
+// marcada como enviada NUNCA volta para pendentes ao recarregar (F5), qualquer
+// que seja o estado no banco; ela só volta se o navegador clicar em "Reabrir",
+// que grava aqui um novo status pendente. Sem ação local, vale o que veio da
+// fonte (ex.: status marcado em outro dispositivo, que chega pelo banco).
 function reconciliarStatus(s, local) {
   if (!local) return;
-  if (usandoMock) { s.status = local.status; s.enviada_em = local.enviada_em; return; }
-  const tLocal = local.em ? new Date(local.em).getTime() : 0;
-  const tRemoto = s.enviada_em ? new Date(s.enviada_em).getTime() : 0;
-  if (tLocal >= tRemoto) { s.status = local.status; s.enviada_em = local.enviada_em; }
+  // Sugestão arquivada pelo robô (mensagem nova gerou um cartão mais recente
+  // que a substitui): fica fora do painel, independente do status salvo aqui.
+  if (s.status === "substituida") return;
+  s.status = local.status;
+  s.enviada_em = local.enviada_em;
 }
 
 // Aplica edições salvas e reconcilia o status sobre a lista vinda da fonte de dados
 function aplicarPersistencia(lista) {
   const edicoes = lerEdicoes();
   const statusSalvos = lerStatus();
+  const mesmoInstante = (a, b) => (a ? new Date(a).getTime() : 0) === (b ? new Date(b).getTime() : 0);
   lista.forEach(s => {
     s.sugestao_original = s.sugestao_resposta;
     if (edicoes[s.id]) { s.sugestao_resposta = edicoes[s.id].texto; s.editada = true; }
-    reconciliarStatus(s, statusSalvos[s.id]);
+    const local = statusSalvos[s.id];
+    const statusRemoto = s.status;
+    const enviadaRemoto = s.enviada_em;
+    reconciliarStatus(s, local);
+    // Autocura: se o banco ficou para trás (ex.: o PATCH falhou na hora do
+    // clique por queda de rede ou token expirado), reenvia o status deste
+    // navegador ao recarregar — assim outros dispositivos também convergem.
+    if (!usandoMock && local && s.status !== "substituida" &&
+        (statusRemoto !== s.status || !mesmoInstante(enviadaRemoto, s.enviada_em))) {
+      salvarStatusSupabase(s.id, s.status, s.enviada_em);
+    }
   });
   return lista;
 }

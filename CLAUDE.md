@@ -18,6 +18,7 @@ O `npm test` (smoke + DOM via jsdom) roda em qualquer lugar, sem navegador. O `n
 
 - **Fonte de dados:** se `SUPABASE_URL`/`SUPABASE_ANON_KEY` (no topo do `<script>`) estiverem preenchidos e acessíveis, busca do Supabase. Se o Supabase falhar, estiver fora do ar ou vazio, cai automaticamente no modo demonstração (dados de exemplo).
 - **Persistência local:** edições, aprendizados e o status de cada mensagem (respondida/reaberta) ficam no `localStorage` do navegador e sobrevivem ao recarregar a página. Com Supabase configurado, o status também é gravado lá.
+- **Status é soberano no navegador:** uma mensagem marcada como respondida nunca volta para pendentes ao dar F5, qualquer que seja o estado no banco — ela só volta pela ação "Reabrir". Se a gravação no Supabase falhar na hora do clique, o painel reenvia o status na próxima carga (autocura).
 
 ## Como testar (agentes)
 

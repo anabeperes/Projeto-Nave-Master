@@ -190,6 +190,114 @@ test('busca encontra por assunto/intenção, não só por nome', async () => {
   dom.window.close();
 });
 
+// ============================================================
+//  MODO SUPABASE (fetch devolve linhas do banco; usandoMock = false)
+//  Regra validada: a ação do navegador é soberana — marcada como enviada
+//  NUNCA volta para pendentes no F5, qualquer que seja o estado no banco.
+//  Só o clique em "Reabrir" traz a mensagem de volta.
+// ============================================================
+function linhaRemota(extra = {}) {
+  return {
+    id: 'r1', contact_name: 'Maria Teste', whatsapp_number: '55 11 9XXXX-0001',
+    horas_aguardando: 1, qtd_mensagens: 1, urgencia: 'MEDIA', intencao: 'TESTE',
+    mensagens: 'Oi, tudo bem?', justificativa: '', sugestao_resposta: 'Olá!',
+    lembrete: '', criada_em: new Date(Date.now() - 3600000).toISOString(),
+    enviada_em: null, status: 'pendente', ...extra,
+  };
+}
+
+// Carrega o painel com um "Supabase" simulado: GET devolve as linhas dadas e
+// os PATCH de status são capturados em `patches` para inspeção.
+async function carregarPainelSupabase(localStorageCompartilhado, linhas, patches = []) {
+  const dom = new JSDOM(html, {
+    runScripts: 'dangerously',
+    url: 'http://localhost/painel/index.html',
+    beforeParse(window) {
+      Object.defineProperty(window, 'localStorage', {
+        value: localStorageCompartilhado, configurable: true,
+      });
+      window.confirm = () => true;
+      window.fetch = (url, opts = {}) => {
+        const u = String(url);
+        if (u.includes('/rest/v1/sugestoes')) {
+          if ((opts.method || 'GET') === 'PATCH') {
+            patches.push({ url: u, body: JSON.parse(opts.body) });
+            return Promise.resolve({ ok: true, status: 204, json: async () => [] });
+          }
+          return Promise.resolve({ ok: true, status: 200, json: async () => linhas });
+        }
+        return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+      };
+    },
+  });
+  const { document } = dom.window;
+  await aguardar(() => document.querySelector('#lista')?.childElementCount > 0, dom.window);
+  return dom;
+}
+
+test('Supabase: enviada neste navegador NÃO volta no F5, mesmo com o banco dizendo pendente', async () => {
+  const ls = criarLocalStorageCompartilhado();
+  // O navegador marcou como enviada, mas o PATCH se perdeu: o banco continua
+  // 'pendente' e ainda traz um enviada_em mais novo (estado adversarial, que
+  // derrotava a reconciliação antiga por timestamp).
+  const marcadaEm = new Date(Date.now() - 600000).toISOString();
+  ls.setItem('fluxo_status', JSON.stringify({ r1: { status: 'enviada', enviada_em: marcadaEm, em: marcadaEm } }));
+  const linhas = [linhaRemota({ status: 'pendente', enviada_em: new Date().toISOString() })];
+
+  const patches = [];
+  const dom = await carregarPainelSupabase(ls, linhas, patches);
+  const doc = dom.window.document;
+
+  assert.equal(cardPendente(doc, 'r1'), null, 'BUG: enviada voltou para pendentes após o F5');
+  trocarFiltro(dom, 'RESPONDIDAS');
+  assert.ok(cardPendente(doc, 'r1'), 'a mensagem deveria estar em Respondidas');
+
+  // Autocura: o painel reenvia o status ao banco que ficou para trás
+  await aguardar(() => patches.length > 0, dom.window);
+  assert.equal(patches[0].body.status, 'enviada', 'o status enviada deveria ser reenviado ao Supabase');
+  dom.window.close();
+});
+
+test('Supabase: só o "Reabrir" manual traz a mensagem de volta, e isso persiste no F5', async () => {
+  const ls = criarLocalStorageCompartilhado();
+  const linhas = [linhaRemota({ status: 'enviada', enviada_em: new Date().toISOString() })];
+
+  // 1ª carga: sem ação local, vale o banco — está em Respondidas
+  let dom = await carregarPainelSupabase(ls, linhas);
+  let doc = dom.window.document;
+  assert.equal(cardPendente(doc, 'r1'), null, 'sem ação local, deveria respeitar o banco (enviada)');
+  trocarFiltro(dom, 'RESPONDIDAS');
+  const btnReabrir = doc.querySelector('.card[data-id="r1"] .btn-enviada');
+  assert.ok(btnReabrir, 'botão Reabrir não encontrado em Respondidas');
+  btnReabrir.click();
+  dom.window.close();
+
+  // RELOAD: o banco ainda diz enviada, mas a reabertura manual é soberana
+  dom = await carregarPainelSupabase(ls, linhas);
+  doc = dom.window.document;
+  assert.ok(cardPendente(doc, 'r1'), 'reaberta manualmente deveria seguir pendente após o F5');
+  dom.window.close();
+});
+
+test('Supabase: sugestão substituída pelo robô fica fora do painel mesmo com status local', async () => {
+  const ls = criarLocalStorageCompartilhado();
+  ls.setItem('fluxo_status', JSON.stringify({ r1: { status: 'pendente', enviada_em: null, em: new Date().toISOString() } }));
+  const linhas = [
+    linhaRemota({ status: 'substituida' }),
+    linhaRemota({ id: 'r2', mensagens: 'Mandei outra mensagem!', status: 'pendente' }),
+  ];
+
+  const patches = [];
+  const dom = await carregarPainelSupabase(ls, linhas, patches);
+  const doc = dom.window.document;
+  assert.equal(cardPendente(doc, 'r1'), null, 'a substituída não deveria ressuscitar nas pendentes');
+  assert.ok(cardPendente(doc, 'r2'), 'o cartão novo (que a substituiu) deveria estar pendente');
+  trocarFiltro(dom, 'RESPONDIDAS');
+  assert.equal(cardPendente(doc, 'r1'), null, 'a substituída também não aparece em Respondidas');
+  assert.equal(patches.length, 0, 'não deveria reenviar status de sugestão substituída');
+  dom.window.close();
+});
+
 test('marcarEnviada tira da fila e persiste (ação do toast ao copiar)', async () => {
   const ls = criarLocalStorageCompartilhado();
   const dom = await carregarPainel(ls);

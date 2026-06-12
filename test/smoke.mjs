@@ -53,8 +53,10 @@ test('o painel persiste o status entre recarregamentos', async () => {
   assert.match(html, /function alternarEnviada[\s\S]*salvarStatus\(statusSalvos\)/);
   assert.match(html, /function alternarEnviada[\s\S]*salvarStatusSupabase\(/);
   // a persistência reaplica o status salvo por cima da fonte de dados (reconciliação)
-  assert.match(html, /aplicarPersistencia[\s\S]*reconciliarStatus\(s, statusSalvos\[s\.id\]\)/);
+  assert.match(html, /aplicarPersistencia[\s\S]*reconciliarStatus\(s, local\)/);
   assert.match(html, /function reconciliarStatus[\s\S]*s\.status\s*=\s*local\.status/);
+  // autocura: o status local é reenviado ao Supabase quando o banco ficou para trás
+  assert.match(html, /aplicarPersistencia[\s\S]*salvarStatusSupabase\(s\.id, s\.status, s\.enviada_em\)/);
 });
 
 test('cai no modo demonstração quando o Supabase falha', async () => {
