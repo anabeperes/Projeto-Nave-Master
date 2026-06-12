@@ -279,6 +279,31 @@ test('Supabase: só o "Reabrir" manual traz a mensagem de volta, e isso persiste
   dom.window.close();
 });
 
+test('Supabase: fila ordena pela hora da MENSAGEM do mentorado, não pela criação do card', async () => {
+  const ls = criarLocalStorageCompartilhado();
+  const agora = Date.now();
+  const linhas = [
+    // Card gerado há 2h, mas a mensagem chegou há 10 min → deve ficar NO TOPO
+    linhaRemota({ id: 'msg-nova', contact_name: 'Mensagem Nova',
+      criada_em: new Date(agora - 2 * 3600000).toISOString(),
+      ultima_mensagem_em: new Date(agora - 10 * 60000).toISOString() }),
+    // Card gerado há 30 min (lote mais novo), mas a mensagem é de 3h atrás
+    linhaRemota({ id: 'msg-velha', contact_name: 'Mensagem Velha',
+      criada_em: new Date(agora - 30 * 60000).toISOString(),
+      ultima_mensagem_em: new Date(agora - 3 * 3600000).toISOString() }),
+    // Card antigo sem o campo novo (gravado antes do passo 7) → cai na criada_em
+    linhaRemota({ id: 'sem-campo', contact_name: 'Sem Campo',
+      criada_em: new Date(agora - 90 * 60000).toISOString(),
+      ultima_mensagem_em: undefined }),
+  ];
+
+  const dom = await carregarPainelSupabase(ls, linhas);
+  const ordem = [...dom.window.document.querySelectorAll('#lista .card')].map(c => c.getAttribute('data-id'));
+  assert.deepEqual(ordem, ['msg-nova', 'sem-campo', 'msg-velha'],
+    'a fila deveria ordenar pela última mensagem do mentorado (mais recente primeiro)');
+  dom.window.close();
+});
+
 test('Supabase: sugestão substituída pelo robô fica fora do painel mesmo com status local', async () => {
   const ls = criarLocalStorageCompartilhado();
   ls.setItem('fluxo_status', JSON.stringify({ r1: { status: 'pendente', enviada_em: null, em: new Date().toISOString() } }));

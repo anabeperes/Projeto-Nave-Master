@@ -482,6 +482,10 @@ let buscaAtual = "";
 let editandoId = null;
 
 function fmtTempo(h) { const horas = Number(h) || 0; if (horas < 1) return Math.round(horas * 60) + " min aguardando"; return horas.toFixed(1) + "h aguardando"; }
+// Hora da mensagem mais recente do mentorado — é por ela que a fila se ordena.
+// Cards antigos (gravados antes de o robô enviar ultima_mensagem_em) caem
+// para a hora de criação da sugestão.
+function horaMensagem(s) { return new Date(s.ultima_mensagem_em || s.criada_em); }
 function classeUrg(u) { return (u || "").toLowerCase(); }
 function dentroDe7Dias(iso) { if (!iso) return false; const limite = new Date(); limite.setDate(limite.getDate() - 7); limite.setHours(0,0,0,0); return new Date(iso) >= limite; }
 function fmtDataHora(iso) { if (!iso) return ""; return new Date(iso).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }); }
@@ -563,8 +567,10 @@ function render() {
       ? respondidas.map(montarCard).join("")
       : `<div class="vazio">Nenhuma mensagem respondida ainda.</div>`;
   } else {
-    // Pendentes: sempre da mais recente para a mais antiga (por data de criação)
-    const pendentes = visiveis.sort((a, b) => new Date(b.criada_em) - new Date(a.criada_em));
+    // Pendentes: sempre da mais recente para a mais antiga, pela hora da
+    // ÚLTIMA MENSAGEM do mentorado (não pela hora em que o robô gerou o card,
+    // que vem em lotes de hora em hora e embaralhava a ordem percebida)
+    const pendentes = visiveis.sort((a, b) => horaMensagem(b) - horaMensagem(a));
     html = pendentes.length
       ? pendentes.map(montarCard).join("")
       : `<div class="vazio">Nenhuma sugestão pendente.</div>`;
@@ -725,7 +731,7 @@ function togglePendentes(e) {
   const pop = document.getElementById("pend-pop");
   if (pop.classList.contains("show")) { pop.classList.remove("show"); return; }
   const pendentes = SUGESTOES.filter(s => s.status !== "enviada" && s.status !== "substituida")
-    .sort((a, b) => new Date(b.criada_em) - new Date(a.criada_em));
+    .sort((a, b) => horaMensagem(b) - horaMensagem(a));
   let html = `<div class="pp-titulo">Mentorados pendentes (${pendentes.length})</div>`;
   html += pendentes.length
     ? pendentes.map(s => `<div class="pp-item" onclick="irParaCard('${s.id}')"><span class="pp-dot ${classeUrg(s.urgencia)}"></span>${escapar(s.contact_name)}</div>`).join("")
