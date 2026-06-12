@@ -25,6 +25,19 @@
 -- ============================================================
 
 
+-- 0) RELIGAR A TRAVA (RLS) ------------------------------------------------------
+--    Conferido em 12/06: a chave pública lia a tabela sugestoes SEM login,
+--    ou seja, a trava estava desligada/aberta — todo navegador logado via
+--    as sugestões de todos. Liga (de novo) em todas as tabelas do painel.
+--    ⚠️ Com a trava ligada, o nó "Salvar Sugestao no Painel" do n8n PRECISA
+--    estar com a chave service_role (Passo 5 do guia), senão para de salvar.
+ALTER TABLE messages           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contacts           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sugestoes          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE atendentes         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE relatorios_diarios ENABLE ROW LEVEL SECURITY;
+
+
 -- 1) CARIMBO NA SUGESTÃO ------------------------------------------------------
 ALTER TABLE sugestoes ADD COLUMN IF NOT EXISTS instancia text;
 CREATE INDEX IF NOT EXISTS idx_sugestoes_instancia ON sugestoes (instancia);
@@ -145,3 +158,17 @@ SELECT COALESCE(instancia, '(sem carimbo — invisível)') AS instancia,
        count(*) AS total
 FROM sugestoes
 GROUP BY 1 ORDER BY 1;
+
+-- (d) A trava está ligada? (todas as linhas devem mostrar rls_ligada = true)
+--     E as políticas devem valer só para 'authenticated' — se aparecer
+--     alguma política com role 'anon' ou 'public' nas tabelas do painel,
+--     ela é a porta aberta que deixava todo mundo ver tudo.
+SELECT relname AS tabela, relrowsecurity AS rls_ligada
+FROM pg_class
+WHERE relname IN ('messages', 'contacts', 'sugestoes', 'atendentes', 'relatorios_diarios')
+  AND relkind = 'r';
+
+SELECT tablename, policyname, roles, cmd
+FROM pg_policies
+WHERE tablename IN ('messages', 'contacts', 'sugestoes', 'atendentes', 'relatorios_diarios')
+ORDER BY tablename, policyname;
