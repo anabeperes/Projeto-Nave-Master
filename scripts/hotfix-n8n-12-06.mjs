@@ -54,6 +54,21 @@ const BLOCO_NOVO =
   "const sugestaoResposta = respostaMatch[1].trim();\n" +
   "if (!sugestaoResposta || /^CATEGORIA:/m.test(sugestaoResposta) || sugestaoResposta.indexOf('PERFIL_ESTILO:') !== -1 || sugestaoResposta.indexOf('INSTRUÇÃO_PARA_REDATOR') !== -1) { return null; }";
 
+// O PUT da API publica so aceita estas chaves dentro de settings; o GET
+// devolve propriedades extras que o PUT rejeita com HTTP 400.
+const SETTINGS_PERMITIDAS = [
+  'saveExecutionProgress', 'saveManualExecutions', 'saveDataErrorExecution',
+  'saveDataSuccessExecution', 'executionTimeout', 'errorWorkflow', 'timezone',
+  'executionOrder',
+];
+function filtrarSettings(settings) {
+  const out = {};
+  for (const k of SETTINGS_PERMITIDAS) {
+    if (settings && settings[k] !== undefined) out[k] = settings[k];
+  }
+  return out;
+}
+
 function patchWorkflow(wf) {
   const mudancas = [];
   for (const node of wf.nodes || []) {
@@ -91,7 +106,7 @@ for (const resumo of ativos) {
   }
   await api('/workflows/' + wf.id, {
     method: 'PUT',
-    body: JSON.stringify({ name: wf.name, nodes: wf.nodes, connections: wf.connections, settings: wf.settings || {} }),
+    body: JSON.stringify({ name: wf.name, nodes: wf.nodes, connections: wf.connections, settings: filtrarSettings(wf.settings) }),
   });
   const depois = await api('/workflows/' + wf.id);
   if (!depois.active) await api(`/workflows/${wf.id}/activate`, { method: 'POST' });
