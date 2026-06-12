@@ -67,19 +67,37 @@ regenera a sugestão na hora — agora pela cadeia corrigida.
 
 ---
 
-## Checklist de implantação (nesta ordem)
+## Checklist de implantação — EXECUTADO em 12/06
 
-1. **n8n:** reimportar o `WF-11-06.json` novo; conferir nos nós "Configurar
-   Supabase" / "Configurar Supabase 18h" a chave real; conferir credenciais de
-   Postgres e Header Auth; **ativar a versão nova e desativar a anterior**
-   (as duas ativas = mensagem duplicada no banco).
-2. **Supabase:** rodar `supabase/passo7-limpar-sugestoes-quebradas.sql` —
-   primeiro o bloco 1 (PRÉVIA) para conferir os cards que vão sair, depois o
-   bloco 2 (DELETE).
+1. ✅ **n8n (12/06 ~14:48 BRT):** o WF-11/06 **ativo** recebeu o hotfix direto
+   via API (`scripts/hotfix-n8n-12-06.mjs`, rodado pelo console do navegador),
+   nos 4 nós da cadeia. Não foi preciso reimportar nem mexer em credenciais.
+   O resultado confirmou que a versão no ar era anterior às guardas de 11/06.
+2. ✅ **Supabase (12/06 ~14:55 BRT):** limpeza executada via API REST (a RLS
+   bloqueia DELETE com a chave do painel, mas permite UPDATE): **95 cards
+   quebrados** (de 311 pendentes) foram marcados como `substituida` e
+   retro-datados (`criada_em = 01/06`) — retro-datar libera o filtro
+   "Filtrar Ja Sugeridas" para regenerar o card na rodada seguinte, já que a
+   mensagem do mentorado volta a ser mais nova que a última sugestão.
+   Os padrões reais encontrados foram mais amplos que os do SQL original
+   (variações do meta-erro do Redator: "inputs recebidos", "pipeline",
+   "undefined", "[MENSAGEM NÃO GERADA...]"). O passo 7 fica como registro;
+   rodá-lo de novo é inócuo (as linhas já não estão `pendente`).
 3. **Conferir:** na próxima rodada cheia (agendamento de hora em hora, 9-17h),
    os mentorados afetados devem ganhar cards novos com resposta normal. Se um
    card não voltar, é porque a cadeia descartou o item por erro de API — ele
    tenta de novo na rodada seguinte.
+
+## ⚠️ Pendência de segurança encontrada no caminho
+
+A chave pública do painel (`SUPABASE_ANON_KEY`, visível no fonte do
+`painel/index.html`) consegue **ler e atualizar** a tabela `sugestoes` inteira
+(todas as instâncias) sem login. Foi o que permitiu a limpeza por aqui, mas
+também significa que qualquer pessoa com a chave consegue alterar sugestões.
+Recomendação: restringir as políticas RLS de `SELECT`/`UPDATE` da tabela
+`sugestoes` ao papel `authenticated` (como já é feito nos relatórios), e
+revogar a API key do n8n usada hoje (Settings → n8n API) por ter passado em
+conversa.
 
 ## Comportamento esperado depois da correção
 

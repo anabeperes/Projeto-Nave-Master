@@ -18,6 +18,18 @@
 --     Sem o workflow novo no n8n, os cards quebrados voltam.
 --
 --  É seguro rodar mais de uma vez (idempotente).
+--
+--  ✅ JÁ EXECUTADO em 12/06 (~14:55 BRT) via API REST, com padrões
+--     ampliados (95 cards): como a RLS bloqueia DELETE com a chave do
+--     painel, os cards foram marcados como 'substituida' e retro-datados
+--     (criada_em = 01/06) — o que também libera a regeneração. Este
+--     arquivo fica como registro; rodá-lo de novo é inócuo porque as
+--     linhas já não estão 'pendente'. Padrões extras encontrados na
+--     prática (variações do meta-erro do Redator), caso precise no
+--     futuro: ILIKE '%undefined%', '%pipeline%', '%inputs recebidos%',
+--     '%mensagem não gerada%', '%não é possível gerar a resposta%',
+--     'especialista' combinado com vazio/conteúdo/input, 'NOTA_PARA_O_%',
+--     e DUVIDA_RESUMIDA:/bloco CATEGORIA: dentro de cerca de código.
 -- ============================================================
 
 -- ------------------------------------------------------------
